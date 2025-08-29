@@ -1,4 +1,4 @@
-def covalent_radii(atom):
+def covalent_radius(atom):
     """
     Chem. Eur. J. 2009, 15, 186-197.
     """
