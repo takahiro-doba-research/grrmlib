@@ -70,8 +70,8 @@ class ReactionPathNetwork:
         nx.set_node_attributes(
             H, {
                 n: {
-                    "x": 10 * n_groups * (1.5 + 0.5 * data["group_nth"]) * np.cos(2 * np.pi * int(data["group"][1:]) / n_groups),
-                    "y": - 10 * n_groups * (1.5 + 0.5 * data["group_nth"]) * np.sin(2 * np.pi * int(data["group"][1:]) / n_groups),
+                    "x": (10 * n_groups + 100 * (data["group_nth"] + 1)) * np.cos(2 * np.pi * int(data["group"][1:]) / n_groups),
+                    "y": - (10 * n_groups + 100 * (data["group_nth"] + 1)) * np.sin(2 * np.pi * int(data["group"][1:]) / n_groups),
                 }
                 for n, data in H.nodes(data=True)
             }
