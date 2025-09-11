@@ -10,3 +10,8 @@ def get_adj_matrix(symbols, atomcoords, threshold=1.25):
     arr_radius = arr_radius[:, None] + arr_radius[None, :]
     arr_adj = (arr_distance < arr_radius * threshold).astype(int)
     return arr_adj
+
+
+def get_distance(atomcoords, label0, label1):
+    d = np.sqrt(np.sum((atomcoords[label0 - 1] - atomcoords[label1 - 1]) ** 2))
+    return d
