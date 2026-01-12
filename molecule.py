@@ -3,11 +3,11 @@ class Molecule:
     def __init__(
         self,
         name=None,
-        functional="B3LYP",
-        basis_set="6-31G",
-        comments="title",
-        charge=0,
-        mult=1,
+        functional=None,
+        basis_set=None,
+        comments=None,
+        charge=None,
+        mult=None,
         symbols=None,
         atomcoords=None,
         scfenergy=None,
@@ -16,7 +16,6 @@ class Molecule:
         grads=None,
         hessian=None,
         nmeigen=None,
-        connection=None,
         status=None,
     ):
         self.name = name
@@ -33,16 +32,15 @@ class Molecule:
         self.grads = grads
         self.hessian = hessian
         self.nmeigen = nmeigen
-        self.connection = connection
         self.status = status
     
     def to_gv(self, path):
         lines = [
-            f"# {self.functional}/{self.basis_set}\n",
+            f"# {self.functional or 'B3LYP'}/{self.basis_set or '6-31G'}\n",
             "\n",
-            f"{self.comments}\n",
+            f"{self.comments or 'title'}\n",
             "\n",
-            f"{self.charge} {self.mult}\n"
+            f"{self.charge or 0} {self.mult or 1}\n"
         ]
         lines += [
             f"{sym:2s}  {coord[0]:17.12f} {coord[1]:17.12f} {coord[2]:17.12f}\n"
@@ -52,6 +50,17 @@ class Molecule:
         
         with open(path, "w") as f:
             f.writelines(lines)
-
+    
     def to_grrm(self, path):
         pass
+
+
+class EQ(Molecule):
+    pass
+
+
+class PT(Molecule):
+    
+    def __init__(self, connection=None, **kwargs):
+        super().__init__(**kwargs)
+        self.connection = connection
