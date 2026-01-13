@@ -4,6 +4,6 @@
 # Exceptions
 !.gitignore
 !grrmlib/
-!grrmlib/**
+!grrmlib/**/*.py
 !README.md
 !LICENSE.txt
