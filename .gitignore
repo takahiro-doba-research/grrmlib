@@ -1,9 +1,17 @@
-# Ignore all
+# Ignore everything
 *
 
 # Exceptions
 !.gitignore
-!grrmlib/
-!grrmlib/**/*.py
 !README.md
 !LICENSE.txt
+
+# Track src/ directory and all .py files inside
+!src/
+!src/**/
+!src/**/*.py
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.so
