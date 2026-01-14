@@ -159,7 +159,7 @@ nx.shortest_path(rpn.to_networkx(), "EQ12", "EQ15")
 
 ### Group Network
 
-GroupNetwork is a wrapper around a networkx.Graph that represents the reaction path network at the group level, 
+GroupNetwork is a wrapper around a `networkx.Graph` that represents the reaction path network at the group level, 
 where EQs are grouped by topology or other criteria.
 
 Features:
