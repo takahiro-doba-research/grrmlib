@@ -5,6 +5,6 @@
 !.gitignore
 !README.md
 !LICENSE.txt
-!pyptoject.toml
+!pyproject.toml
 !src/
 !src/grrmlib/*.py
