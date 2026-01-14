@@ -100,8 +100,8 @@ eqs_filtered = (
 Any numerical attribute stored in the molecule can be used.
 
 ```python
-eqs.smallest("scfenergy")
-pts.largest("afirenergy")
+eq_min = eqs.smallest("scfenergy")
+pt_max = pts.largest("afirenergy")
 ```
 
 ### Exporting in Gaussian / GaussView Style
@@ -126,7 +126,77 @@ Caution: GaussView indexes structures starting at 1, but GRRM uses 0-based index
 
 ### Reaction Path Network
 
+`ReactionPathNetwork` is a wrapper around a `networkx.MultiGraph` that
+represents the reaction path network at the **individual molecule level**.
+
+Features:
+
+- Stores EQ nodes and PT edges
+- Provides transparent access to `networkx.MultiGraph` methods via `__getattr__`
+- Utilities for adding EQs and PTs, removing EQs, and retrieving PTs
+
+```python
+rpn = gl.ReactionPathNetwork()
+
+# Add EQ nodes and PT edges
+rpn.add_eqs(eqs)
+rpn.add_pts(pts)
+
+# Remove a specific EQ node
+rpn.remove_eq("EQ??")
+
+# Retrieve PTs connecting two EQs
+connecting_pts = rpn.get_pts("EQ12", "EQ15")
+```
+
+`to_networkx()` returns the underlying `networkx.MultiGraph` object.
+
+```python
+import networkx as nx
+
+nx.shortest_path(rpn.to_networkx(), "EQ12", "EQ15")
+```
+
 ### Group Network
+
+GroupNetwork is a wrapper around a networkx.Graph that represents the reaction path network at the group level, 
+where EQs are grouped by topology or other criteria.
+
+Features:
+
+- Groups EQ nodes by `eq.group`
+- Aggregates PT edges between groups
+- Provides transparent access to `networkx.Graph` methods via `__getattr__`
+- Utilities for adding an entire `ReactionPathNetwork` and retrieving grouped EQs and PTs
+
+A Minimum example for creating a group network using `grrmlib`:
+
+```python
+import grrmlib as gl
+
+# Read EQ list an PT list
+eqs = gl.read_eq_list("EQ_list.log")
+pts = gl.read_pt_list("PT_list.log")
+
+# Set a "group" attribute to each EQ
+eqs.set_group()
+
+# Create a reaction path network from EQs and PTs
+rpn = gl.ReactionPathNetwork()
+rpn.add_eqs(eqs)
+rpn.add_pts(pts)
+rpn.remove_eq("EQ??")
+
+# Create a group network from the reaction path network
+gn = gl.GroupNetwork()
+gn.add_rpn(rpn)
+
+# Retrieve all EQs in a group
+eqs_in_group = gn.get_eqs("G0")
+
+# Retrieve all PTs connecting two groups
+pts_between_groups = gn.get_pts("G0", "G1")
+```
 
 ### Citation
 
