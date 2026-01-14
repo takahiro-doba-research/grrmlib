@@ -1,12 +1,10 @@
 # Ignore everything
 *
 
-# Track src/ directory and all .py files inside
-!src/
-!src/**/
-!src/**/*.py
-
+# Exceptions
 !.gitignore
 !README.md
 !LICENSE.txt
 !pyptoject.toml
+!src/
+!src/grrmlib/*.py
