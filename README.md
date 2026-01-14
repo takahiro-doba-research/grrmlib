@@ -198,7 +198,13 @@ eqs_in_group = gn.get_eqs("G0")
 pts_between_groups = gn.get_pts("G0", "G1")
 ```
 
-### Citation
+`to_networkx()` returns the underlying `networkx.Graph` object.
+
+```python
+nx.shortest_path(gn.to_networkx(), "G0", "G1")
+```
+
+## Citation
 
 If you use this code in academic work, please cite:
 
