@@ -1,10 +1,15 @@
-# Ignore everything
 *
-
-# Exceptions
 !.gitignore
 !README.md
 !LICENSE.txt
 !pyproject.toml
+
+# source
 !src/
+!src/**/
 !src/**/*.py
+
+# ignore junk
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
