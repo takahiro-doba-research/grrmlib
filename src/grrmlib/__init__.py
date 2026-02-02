@@ -18,4 +18,10 @@ from .group_network import GroupNetwork
 from .gaussian_input import read_gaussian_input
 
 # utils
-from .geometry import get_adj_matrix, get_distance, get_dihedral_angle
+from .geometry import (
+    get_adj_matrix,
+    get_distance,
+    get_dihedral_angle,
+    overlay,
+    rotate
+)
