@@ -7,4 +7,4 @@
 !LICENSE.txt
 !pyproject.toml
 !src/
-!src/grrmlib/*.py
+!src/**/*.py
