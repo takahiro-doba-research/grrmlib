@@ -1,3 +1,8 @@
+import copy
+
+import numpy as np
+
+
 class Molecule:
     
     def __init__(
@@ -39,6 +44,36 @@ class Molecule:
         
         for k, v in kwargs.items():
             setattr(self, k, v)
+    
+    def copy(self):
+        return copy.deepcopy(self)
+    
+    def remove_atoms(self, labels):
+        indices = np.asarray(labels, dtype=int) - 1
+        
+        if indices.size:
+            if indices.min() < 0 or indices.max() >= len(self.atomcoords):
+                raise IndexError("Atom label out of range")
+        
+        mask = np.ones(len(self.atomcoords), dtype=bool)
+        mask[indices] = False
+        mol = self.copy()
+        mol.symbols = [s for i, s in enumerate(self.symbols) if i + 1 not in labels]
+        mask = np.ones(self.atomcoords.shape[0], dtype=bool)
+        mask[np.array(sorted(labels)) - 1] = False
+        mol.atomcoords = self.atomcoords[mask]
+        mol.notes = (
+            [n for i, n in enumerate(self.notes) if i + 1 not in labels]
+            if self.notes else None
+        )
+        return mol
+    
+    def join(self, mol):
+        return Molecule(
+            symbols=self.symbols + mol.symbols,
+            atomcoords=np.vstack([self.atomcoords, mol.atomcoords]),
+            notes=self.notes + mol.notes if self.notes and mol.notes else None
+        )
     
     def to_gv(self, path):
         lines = [
