@@ -14,5 +14,8 @@ from .pt_list import read_pt_list
 from .reaction_path_network import ReactionPathNetwork
 from .group_network import GroupNetwork
 
+# Gaussian
+from .gaussian_input import read_gaussian_input
+
 # utils
-from .geometry import get_adj_matrix, get_distance
+from .geometry import get_adj_matrix, get_distance, get_dihedral_angle

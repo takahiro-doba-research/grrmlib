@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.spatial import distance
+from scipy.spatial.transform import Rotation as R
 
 from .data import covalent_radius
 
@@ -13,30 +14,138 @@ def get_adj_matrix(symbols, atomcoords, threshold=1.25):
 
 
 def get_distance(atomcoords, label0, label1):
-    d = np.sqrt(np.sum((atomcoords[label0 - 1] - atomcoords[label1 - 1]) ** 2))
-    return d
+    return np.linalg.norm(atomcoords[label0 - 1] - atomcoords[label1 - 1])
 
 
-def get_dihedral_angle(atomcoords, label0, label1, label2, label3):
+def get_dihedral_angle(atomcoords, label0, label1, label2, label3, degrees=False):
     """
-    Returns dihedral angle in °
-    Assumes A-B-C-D connection and planes of ABC and BCD.
+    Returns dihedral angle.
+    a-b-c-d dihedral, right-hand rule, range (-pi, pi].
+    If degrees=True, returns degrees instead of radians.
     """
-    A = atomcoords[label0 - 1]
-    B = atomcoords[label1 - 1]
-    C = atomcoords[label2 - 1]
-    D = atomcoords[label3 - 1]
+    a = atomcoords[label0 - 1]
+    b = atomcoords[label1 - 1]
+    c = atomcoords[label2 - 1]
+    d = atomcoords[label3 - 1]
     
-    n0 = np.cross(B - A, C - A)
-    n1 = np.cross(C - B, D - B)
+    ab = b - a
+    bc = c - b
+    cd = d - c
     
+    n1 = np.cross(ab, bc)
+    n2 = np.cross(bc, cd)
+    
+    eps = 1e-12
+    n1_norm = np.linalg.norm(n1)
+    n2_norm = np.linalg.norm(n2)
+    bc_norm = np.linalg.norm(bc)
+    
+    if n1_norm < eps or n2_norm < eps or bc_norm < eps:
+        return np.nan
+    
+    n1 /= n1_norm
+    n2 /= n2_norm
+    bc /= bc_norm
+    
+    angle = np.arctan2(
+        np.dot(np.cross(n1, n2), bc),
+        np.dot(n1, n2)
+    )
+    
+    if degrees:
+        angle = np.degrees(angle)
+    
+    return angle
+
+
+def overlay(
+    atomcoords0,
+    atomcoords1,
+    label_a,
+    label_b,
+    label_c,
+    label_d,
+    label_e,
+    label_f,
+):
+    """
+    Overlays atomcoords1 onto atomcoords0 such that:
+      1) d is translated to a
+      2) vector d–e is aligned to a–b
+      3) dihedral angle f–e–d–c is set to 0
+    
+    atomcoords0   atomcoords1
+          c             f                 (c)f
+    a – b    +    d – e     ->    a,d – (b)e
+    """
+    # 1) d is translated to a
+    a = atomcoords0[label_a - 1]
+    d = atomcoords1[label_d - 1]
+    atomcoords1 = atomcoords1 - d + a
+    
+    # 2) vector d–e is aligned to a–b
+    b = atomcoords0[label_b - 1]
+    d = atomcoords1[label_d - 1]
+    e = atomcoords1[label_e - 1]
+    ab = b - a
+    de = e - d
+    ab /= np.linalg.norm(ab)
+    de /= np.linalg.norm(de)
+    axis = np.cross(de, ab)
+    sin_theta = np.linalg.norm(axis)
+    cos_theta = np.dot(de, ab)
+    
+    if sin_theta < 1e-12:
+        if cos_theta < 0:
+            # antiparallel
+            f = atomcoords1[label_f - 1]
+            ef = f - e
+            ef /= np.linalg.norm(ef)
+            axis_tmp = np.cross(de, ef)
+            axis_tmp /= np.linalg.norm(axis_tmp)
+            rot = R.from_rotvec(axis_tmp * np.pi)
+        else:
+            # parallel
+            rot = R.identity()
+    else:
+        axis /= sin_theta
+        rot = R.from_rotvec(axis * np.arctan2(sin_theta, cos_theta))
+    
+    atomcoords1 = rot.apply(atomcoords1 - d) + d
+    
+    # 3) dihedral angle f–e–d–c is set to 0
+    c = atomcoords0[label_c - 1]
+    d = atomcoords1[label_d - 1]
+    e = atomcoords1[label_e - 1]
+    f = atomcoords1[label_f - 1]
+    fe = e - f
+    ed = d - e
+    dc = c - d
+    n0 = np.cross(fe, ed)
+    n1 = np.cross(ed, dc)
     n0 /= np.linalg.norm(n0)
     n1 /= np.linalg.norm(n1)
-    cos_theta = np.dot(n0, n1)
-    cos_theta = np.clip(cos_theta, -1.0, 1.0)
-    theta = np.arccos(cos_theta)
-    
-    sign = np.sign(np.dot(np.cross(n0, n1), C - B))
-    theta *= sign
-    angle = np.degrees(theta)
-    return angle
+    ed /= np.linalg.norm(ed)
+    angle = np.arctan2(
+        np.dot(np.cross(n0, n1), ed),
+        np.dot(n0, n1)
+    )
+    rot = R.from_rotvec(ed * angle)
+    atomcoords1 = rot.apply(atomcoords1 - d) + d
+    return atomcoords1
+
+
+def rotate(atomcoords, label_a, label_b, angle, degrees=False):
+    """
+    Rotates atomcoords around the a – b axis by `angle` (radians).
+    Right-hand rule: positive angle rotates according to a –> b direction.
+    """
+    if degrees:
+        angle = np.deg2rad(angle)
+    a = atomcoords[label_a - 1]
+    b = atomcoords[label_b - 1]
+    axis = b - a
+    axis /= np.linalg.norm(axis)
+    rot = R.from_rotvec(axis * angle)
+    atomcoords = rot.apply(atomcoords - a) + a
+    return atomcoords

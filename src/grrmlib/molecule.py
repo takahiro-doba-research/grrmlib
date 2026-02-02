@@ -10,6 +10,7 @@ class Molecule:
         mult=None,
         symbols=None,
         atomcoords=None,
+        notes=None,
         scfenergy=None,
         afirenergy=None,
         zpve=None,
@@ -17,6 +18,7 @@ class Molecule:
         hessian=None,
         nmeigen=None,
         status=None,
+        **kwargs
     ):
         self.name = name
         self.functional = functional
@@ -26,6 +28,7 @@ class Molecule:
         self.mult = mult
         self.symbols = symbols
         self.atomcoords = atomcoords
+        self.notes = notes
         self.scfenergy = scfenergy
         self.afirenergy = afirenergy
         self.zpve = zpve
@@ -33,6 +36,9 @@ class Molecule:
         self.hessian = hessian
         self.nmeigen = nmeigen
         self.status = status
+        
+        for k, v in kwargs.items():
+            setattr(self, k, v)
     
     def to_gv(self, path):
         lines = [
