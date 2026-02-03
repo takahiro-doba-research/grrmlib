@@ -3,7 +3,7 @@ from collections import UserDict
 import numpy as np
 
 from .data import atomic_number
-from .geometry import get_adj_matrix, get_distance
+from .geometry import get_distance
 
 
 class Molecules(UserDict):
@@ -16,7 +16,7 @@ class Molecules(UserDict):
         group_adj = {}
         
         for mol in self.values():
-            adj_new = get_adj_matrix(mol.symbols, mol.atomcoords)
+            adj_new = mol.get_adj_matrix()
             
             for group, adj in group_adj.items():
                 if np.all(adj == adj_new):
