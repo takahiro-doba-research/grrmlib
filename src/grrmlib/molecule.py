@@ -1,6 +1,11 @@
 import copy
 
+import networkx as nx
 import numpy as np
+from scipy.spatial import distance
+
+from .data import covalent_radius
+from .molecules import Molecules
 
 
 class Molecule:
@@ -48,25 +53,32 @@ class Molecule:
     def copy(self):
         return copy.deepcopy(self)
     
+    def _apply_atom_mask(self, mask):
+        mask = np.asarray(mask, dtype=bool)
+        
+        n = len(self.atomcoords)
+        if len(mask) != n or len(self.symbols) != n:
+            raise ValueError("mask / symbols / atomcoords length mismatch")
+        if self.notes is not None and len(self.notes) != n:
+            raise ValueError("notes length mismatch")
+        
+        mol = self.copy()
+        mol.symbols = [s for s, m in zip(self.symbols, mask) if m]
+        mol.atomcoords = self.atomcoords[mask]
+        mol.notes = [n for n, m in zip(self.notes, mask) if m] if self.notes else None
+        return mol
+    
     def remove_atoms(self, labels):
         indices = np.asarray(labels, dtype=int) - 1
-        
-        if indices.size:
-            if indices.min() < 0 or indices.max() >= len(self.atomcoords):
-                raise IndexError("Atom label out of range")
-        
         mask = np.ones(len(self.atomcoords), dtype=bool)
         mask[indices] = False
-        mol = self.copy()
-        mol.symbols = [s for i, s in enumerate(self.symbols) if i + 1 not in labels]
-        mask = np.ones(self.atomcoords.shape[0], dtype=bool)
-        mask[np.array(sorted(labels)) - 1] = False
-        mol.atomcoords = self.atomcoords[mask]
-        mol.notes = (
-            [n for i, n in enumerate(self.notes) if i + 1 not in labels]
-            if self.notes else None
-        )
-        return mol
+        return self._apply_atom_mask(mask)
+    
+    def select_atoms(self, labels):
+        indices = np.asarray(labels, dtype=int) - 1
+        mask = np.zeros(len(self.atomcoords), dtype=bool)
+        mask[indices] = True
+        return self._apply_atom_mask(mask)
     
     def join(self, mol):
         return Molecule(
@@ -74,6 +86,24 @@ class Molecule:
             atomcoords=np.vstack([self.atomcoords, mol.atomcoords]),
             notes=self.notes + mol.notes if self.notes and mol.notes else None
         )
+    
+    def get_adj_matrix(self, threshold=1.25):
+        D = distance.cdist(self.atomcoords, self.atomcoords)
+        r = np.array([covalent_radius(s) for s in self.symbols])
+        R = r[:, None] + r[None, :]
+        A = D < R * threshold
+        np.fill_diagonal(A, False)
+        return A
+    
+    def separate(self):
+        A = self.get_adj_matrix()
+        G = nx.from_numpy_array(A)
+        indices_list = sorted(nx.connected_components(G), key=len, reverse=True)
+        mols = {
+            f"F{i}": self.select_atoms([index + 1 for index in indices])
+            for i, indices in enumerate(indices_list)
+        }
+        return Molecules(mols)
     
     def to_gv(self, path):
         lines = [
