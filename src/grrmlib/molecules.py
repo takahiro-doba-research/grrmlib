@@ -85,7 +85,7 @@ class Molecules(UserDict):
                     for i, (sym, coord) in enumerate(zip(mol.symbols, mol.atomcoords))
                 ],
                 " ---------------------------------------------------------------------\n",
-                f" SCF Done:  E({mol.functional}) = {mol.scfenergy:15.12f}     A.U.\n",
+                f" SCF Done:  E({mol.functional or 'B3LYP'}) = {mol.scfenergy:15.12f}     A.U.\n",
                 " \n",
                 " GradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad\n",
                 f" Step number   2 out of a maximum of   2 on scan point {i+1:5d} out of {num:5d}\n",
