@@ -1,3 +1,4 @@
+import copy
 from collections import UserDict
 
 import numpy as np
@@ -11,22 +12,38 @@ class Molecules(UserDict):
     def __init__(self, mols=None):
         super().__init__(mols or {})
     
-    def set_group(self):
-        group_new = 0
-        group_adj = {}
+    def copy(self):
+        return copy.deepcopy(self)
+    
+    def set_group(self, predicate):
+        mols = self.copy()
+        group = 0
+        mols_rep = []
         
-        for mol in self.values():
-            adj_new = mol.get_adj_matrix()
-            
-            for group, adj in group_adj.items():
-                if np.all(adj == adj_new):
-                    mol.group = f"G{group}"
+        for mol in mols.values():
+            for mol_rep in mols_rep:
+                if predicate(mol, mol_rep):
+                    mol.group = mol_rep.group
                     break
             else:
-                mol.group = f"G{group_new}"
-                group_adj[group_new] = adj_new
-                group_new += 1
+                mol.group = f"G{group}"
+                mols_rep.append(mol)
+                group += 1
+        
+        return mols
     
+    def separate(self):
+        index = 0
+        seqs_all = SEQs()
+        
+        for eq in self.values():
+            seqs = eq.separate()
+            for seq in seqs.values():
+                seqs_all[f"SEQ{index}"] = seq
+                index += 1
+        
+        return seqs_all
+        
     def distance_longer(self, label0, label1, distance):
         mols_ = {
             k: mol for k, mol in self.items()
@@ -111,3 +128,31 @@ class PTs(Molecules):
     
     def __init__(self, pts=None):
         super().__init__(mols=pts)
+
+
+class SEQs(Molecules):
+    
+    def __init__(self, seqs=None):
+        super().__init__(mols=seqs)
+
+    def set_group(self, predicate):
+        raise NotImplementedError(
+            "SEQs does not support set_group(); use set_sgroup() instead"
+        )
+    
+    def set_sgroup(self, predicate):
+        mols = self.copy()
+        sgroup = 0
+        mols_rep = []
+        
+        for mol in mols.values():
+            for mol_rep in mols_rep:
+                if predicate(mol, mol_rep):
+                    mol.sgroup = mol_rep.sgroup
+                    break
+            else:
+                mol.sgroup = f"SG{sgroup}"
+                mols_rep.append(mol)
+                sgroup += 1
+        
+        return mols

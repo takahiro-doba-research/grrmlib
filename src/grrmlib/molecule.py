@@ -18,6 +18,7 @@ class Molecule:
         comments=None,
         charge=None,
         mult=None,
+        labels=None,
         symbols=None,
         atomcoords=None,
         notes=None,
@@ -36,6 +37,7 @@ class Molecule:
         self.comments = comments
         self.charge = charge
         self.mult = mult
+        self.labels = labels
         self.symbols = symbols
         self.atomcoords = atomcoords
         self.notes = notes
@@ -53,6 +55,11 @@ class Molecule:
     def copy(self):
         return copy.deepcopy(self)
     
+    def reset_labels(self):
+        mol = self.copy()
+        mol.labels = np.arange(1, len(mol.atomcoords) + 1)
+        return mol
+    
     def _apply_atom_mask(self, mask):
         mask = np.asarray(mask, dtype=bool)
         
@@ -63,25 +70,25 @@ class Molecule:
             raise ValueError("notes length mismatch")
         
         mol = self.copy()
-        mol.symbols = [s for s, m in zip(self.symbols, mask) if m]
         mol.atomcoords = self.atomcoords[mask]
+        mol.symbols = [s for s, m in zip(self.symbols, mask) if m]
+        mol.labels = self.labels[mask]
         mol.notes = [n for n, m in zip(self.notes, mask) if m] if self.notes else None
         return mol
     
     def remove_atoms(self, labels):
-        indices = np.asarray(labels, dtype=int) - 1
-        mask = np.ones(len(self.atomcoords), dtype=bool)
-        mask[indices] = False
+        labels_set = set(labels)
+        mask = np.array([lbl not in labels_set for lbl in self.labels], dtype=bool)
         return self._apply_atom_mask(mask)
     
     def select_atoms(self, labels):
-        indices = np.asarray(labels, dtype=int) - 1
-        mask = np.zeros(len(self.atomcoords), dtype=bool)
-        mask[indices] = True
+        labels_set = set(labels)
+        mask = np.array([lbl in labels_set for lbl in self.labels], dtype=bool)
         return self._apply_atom_mask(mask)
     
     def join(self, mol):
         return Molecule(
+            labels=np.concatenate([self.labels, mol.labels]),
             symbols=self.symbols + mol.symbols,
             atomcoords=np.vstack([self.atomcoords, mol.atomcoords]),
             notes=self.notes + mol.notes if self.notes and mol.notes else None
@@ -98,12 +105,14 @@ class Molecule:
     def separate(self):
         A = self.get_adj_matrix()
         G = nx.from_numpy_array(A)
-        indices_list = sorted(nx.connected_components(G), key=len, reverse=True)
-        mols = {
-            f"F{i}": self.select_atoms([index + 1 for index in indices])
-            for i, indices in enumerate(indices_list)
-        }
-        return Molecules(mols)
+        components = sorted(nx.connected_components(G), key=len, reverse=True)
+        
+        molecules = {}
+        for i, indices in enumerate(components):
+            labels = [self.labels[j] for j in indices]
+            molecules[i] = self.select_atoms(labels)
+        
+        return Molecules(molecules)
     
     def to_gv(self, path):
         lines = [
@@ -135,3 +144,7 @@ class PT(Molecule):
     def __init__(self, connection=None, **kwargs):
         super().__init__(**kwargs)
         self.connection = connection
+
+
+class SEQ(Molecule):
+    pass

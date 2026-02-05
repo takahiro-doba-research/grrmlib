@@ -12,6 +12,7 @@ def read_gaussian_input(path):
     header = lines[:indices_blank[1] + 2]
     footer = lines[indices_blank[2]:]
     lines_coord = lines[indices_blank[1] + 2:indices_blank[2]]
+    labels = np.arange(1, len(lines_coord) + 1)
     symbols = [line.split()[0] for line in lines_coord]
     atomcoords = np.array([list(map(float, line.split()[1:4])) for line in lines_coord])
     
@@ -20,6 +21,7 @@ def read_gaussian_input(path):
         notes = None
     
     return Molecule(
+        labels=labels,
         symbols=symbols,
         atomcoords=atomcoords,
         notes=notes,

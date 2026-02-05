@@ -1,6 +1,6 @@
 # Base classes
-from .molecule import Molecule, EQ, PT
-from .molecules import Molecules, EQs, PTs
+from .molecule import Molecule, EQ, PT, SEQ
+from .molecules import Molecules, EQs, PTs, SEQs
 
 # MIN calculation
 from .min import MIN, read_min
@@ -25,3 +25,4 @@ from .geometry import (
     overlay,
     rotate
 )
+from .predicates import is_identical

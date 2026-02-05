@@ -20,6 +20,7 @@ def read_pt_list(path):
         name = "PT" + re.search(r"TS (\d+),", lines_pt[0]).group(1)
         index_energy = [i for i, line in enumerate(lines_pt) if line.startswith("Energy")][0]
         lines_coord = lines_pt[1:index_energy]
+        labels = np.arange(1, len(lines_coord) + 1)
         symbols = [line.split()[0] for line in lines_coord]
         atomcoords = np.array([list(map(float, line.split()[1:4])) for line in lines_coord])
         scfenergy = float(re.search(r"\(\s*(-?\d+\.?\d+)\s*:", lines_pt[index_energy]).group(1))
@@ -34,6 +35,7 @@ def read_pt_list(path):
         pt = PT(
             name=name,
             mult=mult,
+            labels=labels,
             symbols=symbols,
             atomcoords=atomcoords,
             scfenergy=scfenergy,
