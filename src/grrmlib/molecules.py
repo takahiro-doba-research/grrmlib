@@ -1,5 +1,6 @@
 import copy
 from collections import UserDict
+from pathlib import Path
 
 import numpy as np
 
@@ -156,3 +157,12 @@ class SEQs(Molecules):
                 sgroup += 1
         
         return mols
+    
+    def to_directory(self, directory, basename):
+        base = Path(directory)
+        basename = Path(basename)
+        
+        for name, seq in self.items():
+            outdir = base / seq.sgroup / name
+            outdir.mkdir(parents=True, exist_ok=False)
+            seq.to_gv(outdir / basename)
