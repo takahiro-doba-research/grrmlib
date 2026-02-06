@@ -132,8 +132,8 @@ def rotate(atomcoords, index_a, index_b, angle, degrees=False):
     """
     if degrees:
         angle = np.deg2rad(angle)
-    a = atomcoords[index_a - 1]
-    b = atomcoords[index_b - 1]
+    a = atomcoords[index_a]
+    b = atomcoords[index_b]
     axis = b - a
     axis /= np.linalg.norm(axis)
     rot = R.from_rotvec(axis * angle)
