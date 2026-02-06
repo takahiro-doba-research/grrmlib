@@ -122,10 +122,16 @@ class Molecule:
             "\n",
             f"{self.charge or 0} {self.mult or 1}\n"
         ]
-        lines += [
-            f"{sym:2s}  {coord[0]:17.12f} {coord[1]:17.12f} {coord[2]:17.12f}\n"
-            for sym, coord in zip(self.symbols, self.atomcoords)
-        ]
+        if self.notes:
+            lines += [
+                f"{sym:2s}  {coord[0]:17.12f} {coord[1]:17.12f} {coord[2]:17.12f} {' '.join(map(str, note))}\n"
+                for sym, coord, note in zip(self.symbols, self.atomcoords, self.notes)
+            ]
+        else:
+            lines += [
+                f"{sym:2s}  {coord[0]:17.12f} {coord[1]:17.12f} {coord[2]:17.12f}\n"
+                for sym, coord in zip(self.symbols, self.atomcoords)
+            ]
         lines += ["\n"]
         
         with open(path, "w") as f:
@@ -148,3 +154,9 @@ class PT(Molecule):
 
 class SEQ(Molecule):
     pass
+
+
+class ConnectableMolecule(Molecule):
+
+    def connect(self, mol):
+        pass

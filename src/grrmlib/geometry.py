@@ -2,31 +2,21 @@ import numpy as np
 from scipy.spatial import distance
 from scipy.spatial.transform import Rotation as R
 
-from .data import covalent_radius
+
+def get_distance(atomcoords, index_a, index_b):
+    return np.linalg.norm(atomcoords[index_a] - atomcoords[index_b])
 
 
-def get_adj_matrix(symbols, atomcoords, threshold=1.25):
-    arr_distance = distance.cdist(atomcoords, atomcoords)
-    arr_radius = np.array([covalent_radius(s) for s in symbols])
-    arr_radius = arr_radius[:, None] + arr_radius[None, :]
-    arr_adj = (arr_distance < arr_radius * threshold).astype(int)
-    return arr_adj
-
-
-def get_distance(atomcoords, label0, label1):
-    return np.linalg.norm(atomcoords[label0 - 1] - atomcoords[label1 - 1])
-
-
-def get_dihedral_angle(atomcoords, label0, label1, label2, label3, degrees=False):
+def get_dihedral_angle(atomcoords, index_a, index_b, index_c, index_d, degrees=False):
     """
     Returns dihedral angle.
     a-b-c-d dihedral, right-hand rule, range (-pi, pi].
     If degrees=True, returns degrees instead of radians.
     """
-    a = atomcoords[label0 - 1]
-    b = atomcoords[label1 - 1]
-    c = atomcoords[label2 - 1]
-    d = atomcoords[label3 - 1]
+    a = atomcoords[index_a]
+    b = atomcoords[index_b]
+    c = atomcoords[index_c]
+    d = atomcoords[index_d]
     
     ab = b - a
     bc = c - b
@@ -61,12 +51,12 @@ def get_dihedral_angle(atomcoords, label0, label1, label2, label3, degrees=False
 def overlay(
     atomcoords0,
     atomcoords1,
-    label_a,
-    label_b,
-    label_c,
-    label_d,
-    label_e,
-    label_f,
+    index_a,
+    index_b,
+    index_c,
+    index_d,
+    index_e,
+    index_f,
 ):
     """
     Overlays atomcoords1 onto atomcoords0 such that:
@@ -79,14 +69,14 @@ def overlay(
     a – b    +    d – e     ->    a,d – (b)e
     """
     # 1) d is translated to a
-    a = atomcoords0[label_a - 1]
-    d = atomcoords1[label_d - 1]
+    a = atomcoords0[index_a]
+    d = atomcoords1[index_d]
     atomcoords1 = atomcoords1 - d + a
     
     # 2) vector d–e is aligned to a–b
-    b = atomcoords0[label_b - 1]
-    d = atomcoords1[label_d - 1]
-    e = atomcoords1[label_e - 1]
+    b = atomcoords0[index_b]
+    d = atomcoords1[index_d]
+    e = atomcoords1[index_e]
     ab = b - a
     de = e - d
     ab /= np.linalg.norm(ab)
@@ -98,7 +88,7 @@ def overlay(
     if sin_theta < 1e-12:
         if cos_theta < 0:
             # antiparallel
-            f = atomcoords1[label_f - 1]
+            f = atomcoords1[index_f]
             ef = f - e
             ef /= np.linalg.norm(ef)
             axis_tmp = np.cross(de, ef)
@@ -114,10 +104,10 @@ def overlay(
     atomcoords1 = rot.apply(atomcoords1 - d) + d
     
     # 3) dihedral angle f–e–d–c is set to 0
-    c = atomcoords0[label_c - 1]
-    d = atomcoords1[label_d - 1]
-    e = atomcoords1[label_e - 1]
-    f = atomcoords1[label_f - 1]
+    c = atomcoords0[index_c]
+    d = atomcoords1[index_d]
+    e = atomcoords1[index_e]
+    f = atomcoords1[index_f]
     fe = e - f
     ed = d - e
     dc = c - d
@@ -135,15 +125,15 @@ def overlay(
     return atomcoords1
 
 
-def rotate(atomcoords, label_a, label_b, angle, degrees=False):
+def rotate(atomcoords, index_a, index_b, angle, degrees=False):
     """
     Rotates atomcoords around the a – b axis by `angle` (radians).
     Right-hand rule: positive angle rotates according to a –> b direction.
     """
     if degrees:
         angle = np.deg2rad(angle)
-    a = atomcoords[label_a - 1]
-    b = atomcoords[label_b - 1]
+    a = atomcoords[index_a - 1]
+    b = atomcoords[index_b - 1]
     axis = b - a
     axis /= np.linalg.norm(axis)
     rot = R.from_rotvec(axis * angle)
