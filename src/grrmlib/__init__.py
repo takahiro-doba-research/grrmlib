@@ -19,7 +19,6 @@ from .gaussian_input import read_gaussian_input
 
 # utils
 from .geometry import (
-    get_adj_matrix,
     get_distance,
     get_dihedral_angle,
     overlay,

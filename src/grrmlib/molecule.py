@@ -52,41 +52,55 @@ class Molecule:
         for k, v in kwargs.items():
             setattr(self, k, v)
     
+    def validate(self):
+        if self.labels is None or self.symbols is None or self.atomcoords is None:
+            raise ValueError("labels, symbols, and atomcoords must be set")
+        
+        n = len(self.labels)
+        if len(self.symbols) != n:
+            raise ValueError("symbols length mismatch")
+        if len(self.atomcoords) != n:
+            raise ValueError("atomcoords length mismatch")
+        if self.atomcoords.ndim != 2 or self.atomcoords.shape[1] != 3:
+            raise ValueError("atomcoords must be (N, 3)")
+        if self.notes is not None:
+            if len(self.notes) != n:
+                raise ValueError("notes length mismatch")
+    
     def copy(self):
         return copy.deepcopy(self)
     
     def reset_labels(self):
         mol = self.copy()
-        mol.labels = np.arange(1, len(mol.atomcoords) + 1)
+        mol.labels = np.arange(1, len(mol.labels) + 1)
         return mol
     
-    def _apply_atom_mask(self, mask):
-        mask = np.asarray(mask, dtype=bool)
-        
-        n = len(self.atomcoords)
-        if len(mask) != n or len(self.symbols) != n:
-            raise ValueError("mask / symbols / atomcoords length mismatch")
-        if self.notes is not None and len(self.notes) != n:
-            raise ValueError("notes length mismatch")
-        
+    def _select_by_indices(self, indices):
+        indices = list(indices)
         mol = self.copy()
-        mol.atomcoords = self.atomcoords[mask]
-        mol.symbols = [s for s, m in zip(self.symbols, mask) if m]
-        mol.labels = self.labels[mask]
-        mol.notes = [n for n, m in zip(self.notes, mask) if m] if self.notes else None
+        mol.labels = mol.labels[indices]
+        mol.symbols = [self.symbols[i] for i in indices]
+        mol.atomcoords = mol.atomcoords[indices]
+        mol.notes = (
+            [self.notes[i] for i in indices]
+            if self.notes is not None
+            else None
+        )
         return mol
-    
-    def remove_atoms(self, labels):
-        labels_set = set(labels)
-        mask = np.array([lbl not in labels_set for lbl in self.labels], dtype=bool)
-        return self._apply_atom_mask(mask)
     
     def select_atoms(self, labels):
-        labels_set = set(labels)
-        mask = np.array([lbl in labels_set for lbl in self.labels], dtype=bool)
-        return self._apply_atom_mask(mask)
+        labels = set(labels)
+        indices = [i for i, l in enumerate(self.labels) if l in labels]
+        return self._select_by_indices(indices)
+    
+    def remove_atoms(self, labels):
+        labels = set(labels)
+        indices = [i for i, l in enumerate(self.labels) if l not in labels]
+        return self._select_by_indices(indices)
     
     def join(self, mol):
+        self.validate()
+        mol.validate()
         return Molecule(
             labels=np.concatenate([self.labels, mol.labels]),
             symbols=self.symbols + mol.symbols,
@@ -95,6 +109,7 @@ class Molecule:
         )
     
     def get_adj_matrix(self, threshold=1.25):
+        self.validate()
         D = distance.cdist(self.atomcoords, self.atomcoords)
         r = np.array([covalent_radius(s) for s in self.symbols])
         R = r[:, None] + r[None, :]
@@ -103,18 +118,22 @@ class Molecule:
         return A
     
     def separate(self):
+        self.validate()
         A = self.get_adj_matrix()
         G = nx.from_numpy_array(A)
         components = sorted(nx.connected_components(G), key=len, reverse=True)
         
-        molecules = {}
-        for i, indices in enumerate(components):
-            labels = [self.labels[j] for j in indices]
-            molecules[i] = self.select_atoms(labels)
+        mols = Molecules()
+        for i, component in enumerate(components):
+            indices = sorted(component)
+            mol = self._select_by_indices(indices)
+            mols[f"{self.name}F{i}"] = mol
         
-        return Molecules(molecules)
+        return mols
     
     def to_gv(self, path):
+        self.validate()
+        
         lines = [
             f"# {self.functional or 'B3LYP'}/{self.basis_set or '6-31G'}\n",
             "\n",
@@ -122,16 +141,18 @@ class Molecule:
             "\n",
             f"{self.charge or 0} {self.mult or 1}\n"
         ]
-        if self.notes:
+        
+        if self.notes is not None:
             lines += [
-                f"{sym:2s}  {coord[0]:17.12f} {coord[1]:17.12f} {coord[2]:17.12f} {' '.join(map(str, note))}\n"
-                for sym, coord, note in zip(self.symbols, self.atomcoords, self.notes)
+                f"{s:2s}  {x:17.12f} {y:17.12f} {z:17.12f} {' '.join(map(str, n))}\n"
+                for s, (x, y, z), n in zip(self.symbols, self.atomcoords, self.notes)
             ]
         else:
             lines += [
-                f"{sym:2s}  {coord[0]:17.12f} {coord[1]:17.12f} {coord[2]:17.12f}\n"
-                for sym, coord in zip(self.symbols, self.atomcoords)
+                f"{s:2s}  {x:17.12f} {y:17.12f} {z:17.12f}\n"
+                for s, (x, y, z) in zip(self.symbols, self.atomcoords)
             ]
+        
         lines += ["\n"]
         
         with open(path, "w") as f:
