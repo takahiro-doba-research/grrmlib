@@ -5,6 +5,7 @@ import numpy as np
 from scipy.spatial import distance
 
 from .data import covalent_radius
+from .geometry import overlay, rotate
 from .molecules import Molecules
 
 
@@ -75,6 +76,16 @@ class Molecule:
         mol.labels = np.arange(1, len(mol.labels) + 1)
         return mol
     
+    def labels_to_indices(self, labels):
+        label_to_index = {l: i for i, l in enumerate(self.labels)}
+        try:
+            return [label_to_index[l] for l in labels]
+        except KeyError as e:
+            raise ValueError(f"label not found: {e.args[0]}")
+    
+    def label_to_index(self, label):
+        return self.labels_to_indices([label])[0]
+    
     def _select_by_indices(self, indices):
         indices = list(indices)
         mol = self.copy()
@@ -130,6 +141,41 @@ class Molecule:
             mols[f"{self.name}F{i}"] = mol
         
         return mols
+    
+    def overlay(self, labels, mol_ref, labels_ref):
+        """
+        Overlay this molecule onto mol_ref.
+        labels, labels_ref: sequences of 3 atom labels (order matters)
+        """
+        self.validate()
+        mol_ref.validate()
+        indices = self.labels_to_indices(labels)
+        indices_ref = mol_ref.labels_to_indices(labels_ref)
+        mol = self.copy()
+        mol.atomcoords = overlay(
+            mol_ref.atomcoords,
+            mol.atomcoords,
+            *indices_ref,
+            *indices
+        )
+        return mol
+    
+    def rotate(self, labels, angle, degrees=False):
+        """
+        Rotate molecule around the axis defined by two atom labels.
+        Right-hand rule: positive angle rotates from labels[0] -> labels[1].
+        labels: (label_a, label_b)
+        """
+        self.validate()
+        indices = self.labels_to_indices(labels)
+        mol = self.copy()
+        mol.atomcoords = rotate(
+            mol.atomcoords,
+            *indices,
+            angle,
+            degrees
+        )
+        return mol
     
     def to_gv(self, path):
         self.validate()
