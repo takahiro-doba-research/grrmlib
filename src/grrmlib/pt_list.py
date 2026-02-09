@@ -3,7 +3,7 @@ import re
 import numpy as np
 
 from .molecule import PT
-from .molecules import PTs
+from .molecules import Molecules
 
 
 def read_pt_list(path):
@@ -13,11 +13,11 @@ def read_pt_list(path):
     
     indices_num = [i for i, line in enumerate(lines) if line.startswith("#")]
     indices_num.append(len(lines))
-    pts = PTs()
+    mols = Molecules()
     
     for i, j in zip(indices_num, indices_num[1:]):
         lines_pt = lines[i:j]
-        name = "PT" + re.search(r"TS (\d+),", lines_pt[0]).group(1)
+        name = int(re.search(r"TS (\d+),", lines_pt[0]).group(1))
         index_energy = [i for i, line in enumerate(lines_pt) if line.startswith("Energy")][0]
         lines_coord = lines_pt[1:index_energy]
         labels = np.arange(1, len(lines_coord) + 1)
@@ -44,6 +44,6 @@ def read_pt_list(path):
             nmeigen=nmeigen,
             connection=connection,
         )
-        pts[name] = pt
+        mols[name] = pt
     
-    return pts
+    return mols

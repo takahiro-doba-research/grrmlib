@@ -138,7 +138,7 @@ class Molecule:
         for i, component in enumerate(components):
             indices = sorted(component)
             mol = self._select_by_indices(indices)
-            mols[f"{self.name}F{i}"] = mol
+            mols[i] = mol
         
         return mols
     
@@ -176,6 +176,27 @@ class Molecule:
             degrees
         )
         return mol
+    
+    def to_connectable(self, notes):
+        return ConnectableMolecule(
+            name=self.name,
+            functional=self.functional,
+            basis_set=self.basis_set,
+            comments=self.comments,
+            charge=self.charge,
+            mult=self.mult,
+            labels=self.labels,
+            symbols=self.symbols,
+            atomcoords=self.atomcoords,
+            notes=notes,
+            scfenergy=self.scfenergy,
+            afirenergy=self.afirenergy,
+            zpve=self.zpve,
+            grads=self.grads,
+            hessian=self.hessian,
+            nmeigen=self.nmeigen,
+            status=self.status,
+        )
     
     def to_gv(self, path):
         self.validate()
@@ -219,11 +240,17 @@ class PT(Molecule):
         self.connection = connection
 
 
-class SEQ(Molecule):
-    pass
-
-
 class ConnectableMolecule(Molecule):
-
-    def connect(self, mol):
+    
+    def reset_labels(self):
+        mol = super().reset_labels()
+        mapping = dict(zip(self.labels, mol.labels))
+        mol.notes = [
+            [n[0], mapping[n[1]], mapping[n[2]], *n[3:]]
+            if len(n) >= 3 else n
+            for n in self.notes
+        ]
+        return mol
+    
+    def connect(self, cmol):
         pass

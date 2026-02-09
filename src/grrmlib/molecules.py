@@ -6,6 +6,7 @@ import numpy as np
 
 from .data import atomic_number
 from .geometry import get_distance
+from .grouped_molecules import GroupedMolecules
 
 
 class Molecules(UserDict):
@@ -13,8 +14,11 @@ class Molecules(UserDict):
     def __init__(self, mols=None):
         super().__init__(mols or {})
     
-    def copy(self):
-        return copy.deepcopy(self)
+    def map(self, func):
+        mols_new = self.__class__()
+        for name, mol in self.items():
+            mols_new[name] = func(mol)
+        return mols_new
     
     def set_group(self, predicate):
         mols = self.copy()
@@ -33,18 +37,6 @@ class Molecules(UserDict):
         
         return mols
     
-    def separate(self):
-        index = 0
-        seqs_all = SEQs()
-        
-        for eq in self.values():
-            seqs = eq.separate()
-            for seq in seqs.values():
-                seqs_all[f"SEQ{index}"] = seq
-                index += 1
-        
-        return seqs_all
-        
     def distance_longer(self, label0, label1, distance):
         mols_ = {
             k: mol for k, mol in self.items()
@@ -74,6 +66,34 @@ class Molecules(UserDict):
     
     def largest(self, attr):
         return max(self.values(), key=lambda m: getattr(m, attr))
+    
+    def to_separated(self):
+        mols_new = self.__class__()
+        index = 0
+        
+        for mol in self.values():
+            smols = mol.separate()
+            for smol in smols.values():
+                mols_new[index] = smol
+                index += 1
+        
+        return mols_new
+    
+    def to_group(self, predicate):
+        grouped_mols = GroupedMolecules()
+        index = 0
+        
+        for name, mol in self.items():
+            for group, mols in grouped_mols.items():
+                mol_rep = next(iter(mols.values()))
+                if predicate(mol, mol_rep):
+                    grouped_mols[group][name] = mol
+                    break
+            else:
+                grouped_mols[index] = Molecules({name: mol})
+                index += 1
+        
+        return grouped_mols
     
     def to_gv(self, path):
         num = len(self)
@@ -117,52 +137,3 @@ class Molecules(UserDict):
         
         with open(path, "w") as f:
             f.writelines(lines)
-
-
-class EQs(Molecules):
-    
-    def __init__(self, eqs=None):
-        super().__init__(mols=eqs)
-
-
-class PTs(Molecules):
-    
-    def __init__(self, pts=None):
-        super().__init__(mols=pts)
-
-
-class SEQs(Molecules):
-    
-    def __init__(self, seqs=None):
-        super().__init__(mols=seqs)
-
-    def set_group(self, predicate):
-        raise NotImplementedError(
-            "SEQs does not support set_group(); use set_sgroup() instead"
-        )
-    
-    def set_sgroup(self, predicate):
-        mols = self.copy()
-        sgroup = 0
-        mols_rep = []
-        
-        for mol in mols.values():
-            for mol_rep in mols_rep:
-                if predicate(mol, mol_rep):
-                    mol.sgroup = mol_rep.sgroup
-                    break
-            else:
-                mol.sgroup = f"SG{sgroup}"
-                mols_rep.append(mol)
-                sgroup += 1
-        
-        return mols
-    
-    def to_directory(self, directory, basename):
-        base = Path(directory)
-        basename = Path(basename)
-        
-        for name, seq in self.items():
-            outdir = base / seq.sgroup / name
-            outdir.mkdir(parents=True, exist_ok=False)
-            seq.to_gv(outdir / basename)

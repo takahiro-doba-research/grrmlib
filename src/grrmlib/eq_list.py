@@ -3,7 +3,7 @@ import re
 import numpy as np
 
 from .molecule import EQ
-from .molecules import EQs
+from .molecules import Molecules
 
 
 def read_eq_list(path):
@@ -13,11 +13,11 @@ def read_eq_list(path):
     
     indices_num = [i for i, line in enumerate(lines) if line.startswith("#")]
     indices_num.append(len(lines))
-    eqs = EQs()
+    mols = Molecules()
     
     for i, j in zip(indices_num, indices_num[1:]):
         lines_eq = lines[i:j]
-        name = "EQ" + re.search(r"EQ (\d+),", lines_eq[0]).group(1)
+        name = int(re.search(r"EQ (\d+),", lines_eq[0]).group(1))
         index_energy = [i for i, line in enumerate(lines_eq) if line.startswith("Energy")][0]
         lines_coord = lines_eq[1:index_energy]
         labels = np.arange(1, len(lines_coord) + 1)
@@ -40,6 +40,6 @@ def read_eq_list(path):
             zpve=zpve,
             nmeigen=nmeigen,
         )
-        eqs[name] = eq
+        mols[name] = eq
     
-    return eqs
+    return mols
