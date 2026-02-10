@@ -241,6 +241,47 @@ class PT(Molecule):
 
 
 class ConnectableMolecule(Molecule):
+    """
+    Format of notes
+    ---------------
+    note = [fragment]
+    note = [fragment, label1, label2]
+    note = [fragment, label1, label2, k]
+    
+    - fragment : int
+    - label1, label2 : int (for overlay and rotate functions)
+    - k : int (number of angular configurations)
+    """
+    
+    def __init__(self, data=None, **kwargs):
+        super().__init__(**kwargs)
+        self.data = self.read_notes() if data is None else data
+    
+    def read_notes(self):
+        """
+        Example
+        -------
+        data = {
+            0: {"labels": [1, 2, 3, 4, 5, 6]},
+            1: {"labels": [7, 8, 9, 10], "labels_ref": [7, 1, 8], "angles": [0, 2pi/3, 4pi/3]},
+            2: {"labels": [11, 12, 13, 14], "labels_ref": [12, 3, 14], "angles": [0, pi]},
+        }
+        """
+        data = {}
+        
+        for label, note in zip(self.labels, self.notes):
+            fragment = note[0]
+            entry = data.setdefault(fragment, {"labels": []})
+            entry["labels"].append(label)
+            
+            if len(note) >= 3:
+                entry["labels_ref"] = [label, note[1], note[2]]
+            
+            if len(note) == 4:
+                k = note[3]
+                entry["angles"] = [2 * np.pi * i / k for i in range(k)]
+        
+        return data
     
     def reset_labels(self):
         mol = super().reset_labels()
@@ -250,7 +291,11 @@ class ConnectableMolecule(Molecule):
             if len(n) >= 3 else n
             for n in self.notes
         ]
+        mol.data = mol.read_notes()
         return mol
     
-    def connect(self, cmol):
+    def overlay(self):
+        pass
+    
+    def rotate(self):
         pass
