@@ -34,3 +34,4 @@ from .geometry import (
     rotate
 )
 from .predicates import is_identical
+from .exceptions import FragmentNotFoundError

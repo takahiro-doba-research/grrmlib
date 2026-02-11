@@ -7,6 +7,7 @@ from scipy.spatial import distance
 from .data import covalent_radius
 from .geometry import overlay, rotate
 from .molecules import Molecules
+from .exceptions import FragmentNotFoundError
 
 
 class Molecule:
@@ -147,7 +148,6 @@ class Molecule:
         mol = self.copy()
         mol.__class__ = ConnectableMolecule
         mol.notes = notes
-        mol.data = mol.read_notes()
         return mol
     
     def to_gv(self, path):
@@ -193,47 +193,45 @@ class PT(Molecule):
 
 
 class ConnectableMolecule(Molecule):
-    """
-    Format of notes
-    ---------------
-    note = [fragment]
-    note = [fragment, label1, label2]
-    note = [fragment, label1, label2, k]
     
-    - fragment : int
-    - label1, label2 : int (for overlay and rotate functions)
-    - k : int (number of angular configurations)
-    """
-    
-    def __init__(self, data=None, **kwargs):
-        super().__init__(**kwargs)
-        self.data = self.read_notes() if data is None else data
-    
-    def read_notes(self):
+    @property
+    def connectivity(self):
         """
+        Format of notes
+        ---------------
+        note = [fragment]
+        note = [fragment, label1, label2]
+        note = [fragment, label1, label2, k]
+        
+        - fragment : int
+        - label1, label2 : int (for overlay and rotate functions)
+        - k : int (number of angular configurations)
+        
         Example
         -------
-        data = {
+        connectivity = {
             0: {"labels": [1, 7], "labels_ref": [1, 2, 3], "target": 1, "angles": [0.0]},
             1: {"labels": [2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]},
         }
         """
-        data = {}
+        self.validate()
+        connectivity = {}
+        label_to_note = dict(zip(self.labels, self.notes))
         
-        for label, note in zip(self.labels, self.notes):
+        for label, note in label_to_note.items():
             fragment = note[0]
-            entry = data.setdefault(fragment, {"labels": []})
+            entry = connectivity.setdefault(fragment, {"labels": []})
             entry["labels"].append(label)
             
             if len(note) >= 3:
                 entry["labels_ref"] = [label, note[1], note[2]]
-                entry["target"] = [n[0] for l, n in zip(self.labels, self.notes) if l == note[1]][0]
+                entry["target"] = label_to_note[note[1]][0]
             
             if len(note) == 4:
                 k = note[3]
                 entry["angles"] = [360 * i / k for i in range(k)]
         
-        return data
+        return connectivity
     
     def reset_labels(self, offset=0):
         mol = super().reset_labels(offset)
@@ -243,26 +241,22 @@ class ConnectableMolecule(Molecule):
             if len(n) >= 3 else n
             for n in self.notes
         ]
-        mol.data = mol.read_notes()
         return mol
-        
+    
     def connect(self, mol):
-        self.validate()
-        mol.validate()
+        fg_self = [f for f, d in mol.connectivity.items() if "angles" in d]
         
-        fragment_self = [f for f, d in mol.data.items() if "angles" in d]
-        
-        if len(fragment_self) != 1:
+        if len(fg_self) != 1:
             raise ValueError("exactly one connectable fragment must exist in mol")
         
-        fragment_self = fragment_self[0]
-        fragment_mol = mol.data[fragment_self]["target"]
+        fg_self = fg_self[0]
+        fg_mol = mol.connectivity[fg_self]["target"]
         
-        if fragment_mol not in self.data:
-            raise ValueError(f"fragment {fragment_mol} is not connectable to this molecule")
+        if fg_mol not in self.connectivity:
+            raise FragmentNotFoundError(f"fragment {fg_mol} is not connectable to this molecule")
         
-        indices_self = self.labels_to_indices(self.data[fragment_mol]["labels_ref"])
-        indices_mol = mol.labels_to_indices(mol.data[fragment_self]["labels_ref"])
+        indices_self = self.labels_to_indices(self.connectivity[fg_mol]["labels_ref"])
+        indices_mol = mol.labels_to_indices(mol.connectivity[fg_self]["labels_ref"])
         
         atomcoords_overlay = overlay(
             self.atomcoords,
@@ -272,8 +266,8 @@ class ConnectableMolecule(Molecule):
         )
         
         mols = Molecules()
-        angles = mol.data[fragment_self]["angles"]
-        self_new = self.remove_atoms(self.data[fragment_mol]["labels"])
+        angles = mol.connectivity[fg_self]["angles"]
+        self_new = self.remove_atoms(self.connectivity[fg_mol]["labels"])
         
         for angle in angles:
             mol_new = mol.copy()
@@ -283,7 +277,7 @@ class ConnectableMolecule(Molecule):
                 angle,
                 degrees=True
             )
-            mol_new = mol_new.remove_atoms(mol.data[fragment_self]["labels"])
-            mols[angle] = self_new.join(mol_new)
+            mol_new = mol_new.remove_atoms(mol.connectivity[fg_self]["labels"])
+            mols[angle] = self_new.join(mol_new).reset_labels()
         
         return mols
