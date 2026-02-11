@@ -71,9 +71,9 @@ class Molecule:
     def copy(self):
         return copy.deepcopy(self)
     
-    def reset_labels(self):
+    def reset_labels(self, offset=0):
         mol = self.copy()
-        mol.labels = np.arange(1, len(mol.labels) + 1)
+        mol.labels = np.arange(offset + 1, len(mol.labels) + offset + 1)
         return mol
     
     def labels_to_indices(self, labels):
@@ -112,7 +112,8 @@ class Molecule:
     def join(self, mol):
         self.validate()
         mol.validate()
-        return Molecule(
+        mol = mol.reset_labels(max(self.labels))
+        return self.__class__(
             labels=np.concatenate([self.labels, mol.labels]),
             symbols=self.symbols + mol.symbols,
             atomcoords=np.vstack([self.atomcoords, mol.atomcoords]),
@@ -142,61 +143,12 @@ class Molecule:
         
         return mols
     
-    def overlay(self, labels, mol_ref, labels_ref):
-        """
-        Overlay this molecule onto mol_ref.
-        labels, labels_ref: sequences of 3 atom labels (order matters)
-        """
-        self.validate()
-        mol_ref.validate()
-        indices = self.labels_to_indices(labels)
-        indices_ref = mol_ref.labels_to_indices(labels_ref)
-        mol = self.copy()
-        mol.atomcoords = overlay(
-            mol_ref.atomcoords,
-            mol.atomcoords,
-            *indices_ref,
-            *indices
-        )
-        return mol
-    
-    def rotate(self, labels, angle, degrees=False):
-        """
-        Rotate molecule around the axis defined by two atom labels.
-        Right-hand rule: positive angle rotates from labels[0] -> labels[1].
-        labels: (label_a, label_b)
-        """
-        self.validate()
-        indices = self.labels_to_indices(labels)
-        mol = self.copy()
-        mol.atomcoords = rotate(
-            mol.atomcoords,
-            *indices,
-            angle,
-            degrees
-        )
-        return mol
-    
     def to_connectable(self, notes):
-        return ConnectableMolecule(
-            name=self.name,
-            functional=self.functional,
-            basis_set=self.basis_set,
-            comments=self.comments,
-            charge=self.charge,
-            mult=self.mult,
-            labels=self.labels,
-            symbols=self.symbols,
-            atomcoords=self.atomcoords,
-            notes=notes,
-            scfenergy=self.scfenergy,
-            afirenergy=self.afirenergy,
-            zpve=self.zpve,
-            grads=self.grads,
-            hessian=self.hessian,
-            nmeigen=self.nmeigen,
-            status=self.status,
-        )
+        mol = self.copy()
+        mol.__class__ = ConnectableMolecule
+        mol.notes = notes
+        mol.data = mol.read_notes()
+        return mol
     
     def to_gv(self, path):
         self.validate()
@@ -262,9 +214,8 @@ class ConnectableMolecule(Molecule):
         Example
         -------
         data = {
-            0: {"labels": [1, 2, 3, 4, 5, 6]},
-            1: {"labels": [7, 8, 9, 10], "labels_ref": [7, 1, 8], "angles": [0, 2pi/3, 4pi/3]},
-            2: {"labels": [11, 12, 13, 14], "labels_ref": [12, 3, 14], "angles": [0, pi]},
+            0: {"labels": [1, 7], "labels_ref": [1, 2, 3], "target": 1, "angles": [0.0]},
+            1: {"labels": [2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]},
         }
         """
         data = {}
@@ -276,15 +227,16 @@ class ConnectableMolecule(Molecule):
             
             if len(note) >= 3:
                 entry["labels_ref"] = [label, note[1], note[2]]
+                entry["target"] = [n[0] for l, n in zip(self.labels, self.notes) if l == note[1]][0]
             
             if len(note) == 4:
                 k = note[3]
-                entry["angles"] = [2 * np.pi * i / k for i in range(k)]
+                entry["angles"] = [360 * i / k for i in range(k)]
         
         return data
     
-    def reset_labels(self):
-        mol = super().reset_labels()
+    def reset_labels(self, offset=0):
+        mol = super().reset_labels(offset)
         mapping = dict(zip(self.labels, mol.labels))
         mol.notes = [
             [n[0], mapping[n[1]], mapping[n[2]], *n[3:]]
@@ -293,9 +245,45 @@ class ConnectableMolecule(Molecule):
         ]
         mol.data = mol.read_notes()
         return mol
-    
-    def overlay(self):
-        pass
-    
-    def rotate(self):
-        pass
+        
+    def connect(self, mol):
+        self.validate()
+        mol.validate()
+        
+        fragment_self = [f for f, d in mol.data.items() if "angles" in d]
+        
+        if len(fragment_self) != 1:
+            raise ValueError("exactly one connectable fragment must exist in mol")
+        
+        fragment_self = fragment_self[0]
+        fragment_mol = mol.data[fragment_self]["target"]
+        
+        if fragment_mol not in self.data:
+            raise ValueError(f"fragment {fragment_mol} is not connectable to this molecule")
+        
+        indices_self = self.labels_to_indices(self.data[fragment_mol]["labels_ref"])
+        indices_mol = mol.labels_to_indices(mol.data[fragment_self]["labels_ref"])
+        
+        atomcoords_overlay = overlay(
+            self.atomcoords,
+            mol.atomcoords,
+            *[indices_self[i] for i in [1, 0, 2]],
+            *indices_mol
+        )
+        
+        mols = Molecules()
+        angles = mol.data[fragment_self]["angles"]
+        self_new = self.remove_atoms(self.data[fragment_mol]["labels"])
+        
+        for angle in angles:
+            mol_new = mol.copy()
+            mol_new.atomcoords = rotate(
+                atomcoords_overlay,
+                *indices_mol[:2],
+                angle,
+                degrees=True
+            )
+            mol_new = mol_new.remove_atoms(mol.data[fragment_self]["labels"])
+            mols[angle] = self_new.join(mol_new)
+        
+        return mols
