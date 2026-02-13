@@ -2,7 +2,7 @@ import re
 
 import numpy as np
 
-from .molecule import Molecule
+from ..core import Molecule
 
 
 def _read_optopt(lines):

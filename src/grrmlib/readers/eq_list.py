@@ -2,8 +2,7 @@ import re
 
 import numpy as np
 
-from .molecule import EQ
-from .molecules import Molecules
+from ..core import Molecule, Molecules
 
 
 def read_eq_list(path):
@@ -29,7 +28,7 @@ def read_eq_list(path):
         zpve = float(re.search(r"=\s*(-?\d+\.?\d+)", lines_eq[index_energy + 2]).group(1))
         lines_nmeigen = lines_eq[index_energy + 4:]
         nmeigen = np.concatenate([list(map(float, line.split())) for line in lines_nmeigen])
-        eq = EQ(
+        mol = Molecule(
             name=name,
             mult=mult,
             labels=labels,
@@ -40,6 +39,6 @@ def read_eq_list(path):
             zpve=zpve,
             nmeigen=nmeigen,
         )
-        mols[name] = eq
+        mols[name] = mol
     
     return mols

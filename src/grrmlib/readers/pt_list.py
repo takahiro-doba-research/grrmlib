@@ -2,8 +2,7 @@ import re
 
 import numpy as np
 
-from .molecule import PT
-from .molecules import Molecules
+from ..core import Molecule, Molecules
 
 
 def read_pt_list(path):
@@ -32,7 +31,7 @@ def read_pt_list(path):
         nmeigen = np.concatenate([list(map(float, line.split())) for line in lines_nmeigen])
         connection = re.search(r":\s*(\d+|\?\?)\s*-\s*(\d+|\?\?)", lines_pt[index_connection]).groups()
         connection = tuple(f"EQ{num}" for num in connection)
-        pt = PT(
+        mol = Molecule(
             name=name,
             mult=mult,
             labels=labels,
@@ -44,6 +43,6 @@ def read_pt_list(path):
             nmeigen=nmeigen,
             connection=connection,
         )
-        mols[name] = pt
+        mols[name] = mol
     
     return mols

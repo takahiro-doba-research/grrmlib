@@ -1,9 +1,9 @@
 import numpy as np
 
-from .molecule import Molecule
+from ..core import Molecule
 
 
-def read_gaussian_input(path):
+def read_connectable(path):
     
     with open(path, "r") as f:
         lines = f.readlines()
@@ -15,10 +15,7 @@ def read_gaussian_input(path):
     labels = np.arange(1, len(lines_coord) + 1)
     symbols = [line.split()[0] for line in lines_coord]
     atomcoords = np.array([list(map(float, line.split()[1:4])) for line in lines_coord])
-    
     notes = [list(map(int, line.split()[4:])) for line in lines_coord]
-    if all(not note for note in notes):
-        notes = None
     
     return Molecule(
         labels=labels,

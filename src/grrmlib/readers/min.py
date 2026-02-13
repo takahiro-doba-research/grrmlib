@@ -1,19 +1,19 @@
-from .data import atomic_number
-from ._ircirc import _read_ircirc
+from ..core.data import atomic_number
+from ._optopt import _read_optopt
 
 
-class LUPTS:
+class MIN:
 
-    def __init__(self, name=None, irc=None):
+    def __init__(self, name=None, itrs=None, optimized=None):
         self.name = name
-        self.irc = irc
-        
-    def to_gv(self, path, reverse=False):
-        irc = self.irc[::-1] if reverse else self.irc
-        num = len(irc)
+        self.itrs = itrs
+        self.optimized = optimized
+
+    def to_gv(self, path):
+        num = len(self.itrs)
         lines = [" #p\n", " \n"]
         
-        for i, molecule in enumerate(irc):
+        for i, molecule in enumerate(self.itrs):
             lines += [
                 " GradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad\n",
                 "                          Input orientation:                          \n",
@@ -53,13 +53,15 @@ class LUPTS:
             f.writelines(lines)
 
 
-def read_lup_ts(path):
+def read_min(path):
     
     with open(path, "r") as f:
         lines = f.readlines()
     
-    indices_ircirc = [i for i, line in enumerate(lines) if line.startswith("IRCIRC")]
-    lines_ircirc = lines[indices_ircirc[0]:indices_ircirc[1] + 1]
-    forward_step, _, forward_optimized, backward_step, _, backward_optimized = _read_ircirc(lines_ircirc)
-    irc = [backward_optimized] + backward_step[::-1] + forward_step + [forward_optimized]
-    return LUPTS(irc=irc)
+    indices_optopt = [i for i, line in enumerate(lines) if line.startswith("OPTOPT")]
+    lines_optopt = lines[indices_optopt[0]:indices_optopt[1] + 1]
+    itrs, optimized = _read_optopt(lines_optopt)
+    return MIN(
+        itrs=itrs,
+        optimized=optimized
+    )

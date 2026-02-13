@@ -5,9 +5,10 @@ import numpy as np
 from scipy.spatial import distance
 
 from .data import covalent_radius
-from .geometry import overlay, rotate
 from .molecules import Molecules
 from .exceptions import FragmentNotFoundError
+
+from grrmlib.operations import overlay, rotate
 
 
 class Molecule:
@@ -68,6 +69,15 @@ class Molecule:
         if self.notes is not None:
             if len(self.notes) != n:
                 raise ValueError("notes length mismatch")
+    
+    def iter_atoms(self, with_notes=False):
+        self.validate()
+        if with_notes:
+            for symbol, atomcoord, note in zip(self.symbols, self.atomcoords, self.notes):
+                yield symbol, atomcoord, note
+        else:
+            for symbol, atomcoord in zip(self.symbols, self.atomcoords):
+                yield symbol, atomcoord
     
     def copy(self):
         return copy.deepcopy(self)
@@ -176,9 +186,6 @@ class Molecule:
         
         with open(path, "w") as f:
             f.writelines(lines)
-    
-    def to_grrm(self, path):
-        pass
 
 
 class EQ(Molecule):

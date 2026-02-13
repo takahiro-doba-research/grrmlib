@@ -1,12 +1,17 @@
+from __future__ import annotations
+
 import copy
 from collections import UserDict
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from .data import atomic_number
-from .geometry import get_distance
-from .grouped_molecules import GroupedMolecules
+from ..operations import get_distance
+
+if TYPE_CHECKING:
+    from .grouped_molecules import GroupedMolecules
 
 
 class Molecules(UserDict):
@@ -79,21 +84,31 @@ class Molecules(UserDict):
         
         return mols_new
     
-    def to_group(self, predicate):
-        grouped_mols = GroupedMolecules()
+    def separate(self) -> GroupedMolecules:
+        from .grouped_molecules import GroupedMolecules
+        gmols = GroupedMolecules()
+        
+        for name, mol in self.items():
+            gmols[name] = mol.separate()
+        
+        return gmols
+    
+    def cluster(self, predicate) -> GroupedMolecules:
+        from .grouped_molecules import GroupedMolecules
+        gmols = GroupedMolecules()
         index = 0
         
         for name, mol in self.items():
-            for group, mols in grouped_mols.items():
+            for group, mols in gmols.items():
                 mol_rep = next(iter(mols.values()))
                 if predicate(mol, mol_rep):
-                    grouped_mols[group][name] = mol
+                    gmols[group][name] = mol
                     break
             else:
-                grouped_mols[index] = Molecules({name: mol})
+                gmols[index] = Molecules({name: mol})
                 index += 1
         
-        return grouped_mols
+        return gmols
     
     def to_gv(self, path):
         num = len(self)

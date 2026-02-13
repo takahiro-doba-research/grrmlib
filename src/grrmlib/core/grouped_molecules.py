@@ -1,5 +1,11 @@
+from __future__ import annotations
+
 from collections import UserDict
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .molecules import Molecules
 
 
 class GroupedMolecules(UserDict):
@@ -21,6 +27,18 @@ class GroupedMolecules(UserDict):
     
     def map_group(self, func):
         pass
+    
+    def flatten(self) -> Molecules:
+        from .molecules import Molecules
+        mols_new = Molecules()
+        index = 0
+        
+        for group, mols in self.items():
+            for name, mol in mols.items():
+                mols_new[index] = mol
+                index += 1
+        
+        return mols_new
     
     def to_gv_folder(
         self,

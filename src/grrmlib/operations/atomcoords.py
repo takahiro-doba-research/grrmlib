@@ -1,6 +1,14 @@
+import copy
+
 import numpy as np
 from scipy.spatial import distance
 from scipy.spatial.transform import Rotation as R
+
+
+def with_atomcoords_from(mol0, mol1):
+    mol0_new = mol0.copy()
+    mol0_new.atomcoords = copy.deepcopy(mol1.atomcoords)
+    return mol0_new
 
 
 def get_distance(atomcoords, index_a, index_b):
