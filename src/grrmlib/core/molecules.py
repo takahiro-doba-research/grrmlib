@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from .data import atomic_number
-from ..operations import get_distance
+#from ..operations import get_distance
 
 if TYPE_CHECKING:
     from .grouped_molecules import GroupedMolecules
@@ -42,26 +42,26 @@ class Molecules(UserDict):
         
         return mols
     
-    def distance_longer(self, label0, label1, distance):
-        mols_ = {
-            k: mol for k, mol in self.items()
-            if distance < get_distance(mol.atomcoords, label0, label1)
-        }
-        return Molecules(mols_)
-    
-    def distance_shorter(self, label0, label1, distance):
-        mols_ = {
-            k: mol for k, mol in self.items()
-            if get_distance(mol.atomcoords, label0, label1) < distance
-        }
-        return Molecules(mols_)
-    
-    def distance_between(self, label0, label1, distance0, distance1):
-        mols_ = {
-            k: mol for k, mol in self.items()
-            if distance0 < get_distance(mol.atomcoords, label0, label1) < distance1
-        }
-        return Molecules(mols_)
+#    def distance_longer(self, label0, label1, distance):
+#        mols_ = {
+#            k: mol for k, mol in self.items()
+#            if distance < get_distance(mol.atomcoords, label0, label1)
+#        }
+#        return Molecules(mols_)
+#    
+#    def distance_shorter(self, label0, label1, distance):
+#        mols_ = {
+#            k: mol for k, mol in self.items()
+#            if get_distance(mol.atomcoords, label0, label1) < distance
+#        }
+#        return Molecules(mols_)
+#    
+#    def distance_between(self, label0, label1, distance0, distance1):
+#        mols_ = {
+#            k: mol for k, mol in self.items()
+#            if distance0 < get_distance(mol.atomcoords, label0, label1) < distance1
+#        }
+#        return Molecules(mols_)
     
     def filter(self, predicate):
         return Molecules({k: v for k, v in self.items() if predicate(v)})

@@ -1,15 +1,22 @@
-from .labels import with_labels_from
-from .symbols import with_symbols_from
-from .atomcoords import (
+from .exceptions import (
+    FragmentNotFoundError,
+    ManyFragmentsFoundError,
+)
+from .molecule import (
+    with_labels_from,
+    with_symbols_from,
     with_atomcoords_from,
+    with_notes_from,
+    with_header_from,
+    with_footer_from,
     get_distance,
     get_dihedral_angle,
     overlay,
     rotate,
 )
-from .notes import (
-    with_notes_from,
+from .connectable import (
+    read_connectivity,
+    step_to_angles,
     reset_connectable_notes,
+    connect,
 )
-from .header import with_header_from
-from .footer import with_footer_from

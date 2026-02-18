@@ -5,9 +5,39 @@ from scipy.spatial import distance
 from scipy.spatial.transform import Rotation as R
 
 
+def with_labels_from(mol0, mol1):
+    mol0_new = mol0.copy()
+    mol0_new.labels = copy.copy(mol1.labels)
+    return mol0_new
+
+
+def with_symbols_from(mol0, mol1):
+    mol0_new = mol0.copy()
+    mol0_new.symbols = copy.copy(mol1.symbols)
+    return mol0_new
+
+
 def with_atomcoords_from(mol0, mol1):
     mol0_new = mol0.copy()
     mol0_new.atomcoords = copy.deepcopy(mol1.atomcoords)
+    return mol0_new
+
+
+def with_notes_from(mol0, mol1):
+    mol0_new = mol0.copy()
+    mol0_new.notes = copy.deepcopy(mol1.notes)
+    return mol0_new
+
+
+def with_header_from(mol0, mol1):
+    mol0_new = mol0.copy()
+    mol0_new.header = copy.copy(mol1.header)
+    return mol0_new
+
+
+def with_footer_from(mol0, mol1):
+    mol0_new = mol0.copy()
+    mol0_new.footer = copy.copy(mol1.footer)
     return mol0_new
 
 

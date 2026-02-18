@@ -13,17 +13,22 @@ from .core import (
     is_identical,
 )
 from .operations import (
-    get_distance,
-    get_dihedral_angle,
-    overlay,
-    rotate,
+    FragmentNotFoundError,
+    ManyFragmentsFoundError,
     with_labels_from,
     with_symbols_from,
     with_atomcoords_from,
     with_notes_from,
-    reset_connectable_notes,
     with_header_from,
     with_footer_from,
+    get_distance,
+    get_dihedral_angle,
+    overlay,
+    rotate,
+    read_connectivity,
+    step_to_angles,
+    reset_connectable_notes,
+    connect,
 )
 from .writers import (
     GaussianInputWriter,

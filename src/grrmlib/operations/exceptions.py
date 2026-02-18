@@ -6,3 +6,8 @@ class MoleculeError(Exception):
 class FragmentNotFoundError(MoleculeError):
     """Raised when a fragment is not found."""
     pass
+
+
+class ManyFragmentsFoundError(MoleculeError):
+    """Raised when too many fragments are found."""
+    pass

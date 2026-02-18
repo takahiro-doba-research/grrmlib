@@ -6,9 +6,9 @@ from scipy.spatial import distance
 
 from .data import covalent_radius
 from .molecules import Molecules
-from .exceptions import FragmentNotFoundError
+#from .exceptions import FragmentNotFoundError
 
-from grrmlib.operations import overlay, rotate
+#from ..operations import overlay, rotate
 
 
 class Molecule:
@@ -123,7 +123,7 @@ class Molecule:
     def join(self, mol):
         self.validate()
         mol.validate()
-        mol = mol.reset_labels(max(self.labels))
+#        mol = mol.reset_labels(max(self.labels))
         return self.__class__(
             labels=np.concatenate([self.labels, mol.labels]),
             symbols=self.symbols + mol.symbols,
