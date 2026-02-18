@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 import copy
-from typing import TYPE_CHECKING
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    Iterator,
+    Self,
+    Sequence
+)
 
 import networkx as nx
 import numpy as np
@@ -17,25 +24,25 @@ class Molecule:
     
     def __init__(
         self,
-        name=None,
-        functional=None,
-        basis_set=None,
-        comments=None,
-        charge=None,
-        mult=None,
-        labels=None,
-        symbols=None,
-        atomcoords=None,
-        notes=None,
-        scfenergy=None,
-        afirenergy=None,
-        zpve=None,
-        grads=None,
-        hessian=None,
-        nmeigen=None,
-        status=None,
-        **kwargs
-    ):
+        name: str | None = None,
+        functional: str | None = None,
+        basis_set: str | None = None,
+        comments: str | None = None,
+        charge: int | None = None,
+        mult: int | None = None,
+        labels: np.ndarray | None = None,
+        symbols: Sequence[str] | None = None,
+        atomcoords: np.ndarray | None = None,
+        notes: Sequence[Sequence[int]] | None = None,
+        scfenergy: float | None = None,
+        afirenergy: float | None = None,
+        zpve: float | None = None,
+        grads: np.ndarray | None = None,
+        hessian: np.ndarray | None = None,
+        nmeigen: np.ndarray | None = None,
+        status: str | None = None,
+        **kwargs: Any
+    ) -> None:
         self.name = name
         self.functional = functional
         self.basis_set = basis_set
@@ -57,7 +64,7 @@ class Molecule:
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-    def validate(self):
+    def validate(self) -> None:
         if self.labels is None or self.symbols is None or self.atomcoords is None:
             raise ValueError("labels, symbols, and atomcoords must be set")
         
@@ -72,10 +79,12 @@ class Molecule:
             if len(self.notes) != n:
                 raise ValueError("notes length mismatch")
 
-    def copy(self) -> Molecule:
+    def copy(self) -> Self:
         return copy.deepcopy(self)
     
-    def iter_atoms(self, with_notes=False):
+    def iter_atoms(self, with_notes: bool = False) -> Iterator[
+        tuple[str, np.ndarray] | tuple[str, np.ndarray, Sequence[int]]
+    ]:
         self.validate()
         if with_notes:
             for symbol, atomcoord, note in zip(self.symbols, self.atomcoords, self.notes):
@@ -84,22 +93,22 @@ class Molecule:
             for symbol, atomcoord in zip(self.symbols, self.atomcoords):
                 yield symbol, atomcoord
     
-    def reset_labels(self, offset=0) -> Molecule:
+    def reset_labels(self, offset: int = 0) -> Self:
         mol = self.copy()
         mol.labels = np.arange(offset + 1, len(mol.labels) + offset + 1)
         return mol
     
-    def labels_to_indices(self, labels):
+    def labels_to_indices(self, labels: Iterable[int]) -> list[int]:
         label_to_index = {l: i for i, l in enumerate(self.labels)}
         try:
             return [label_to_index[l] for l in labels]
         except KeyError as e:
             raise ValueError(f"label not found: {e.args[0]}")
     
-    def label_to_index(self, label):
+    def label_to_index(self, label: int) -> int:
         return self.labels_to_indices([label])[0]
     
-    def _select_by_indices(self, indices) -> Molecule:
+    def _select_by_indices(self, indices: Iterable[int]) -> Self:
         indices = list(indices)
         mol = self.copy()
         mol.labels = mol.labels[indices]
@@ -112,17 +121,17 @@ class Molecule:
         )
         return mol
     
-    def select_atoms(self, labels) -> Molecule:
+    def select_atoms(self, labels: Iterable[int]) -> Self:
         labels = set(labels)
         indices = [i for i, l in enumerate(self.labels) if l in labels]
         return self._select_by_indices(indices)
     
-    def remove_atoms(self, labels) -> Molecule:
+    def remove_atoms(self, labels: Iterable[int]) -> Self:
         labels = set(labels)
         indices = [i for i, l in enumerate(self.labels) if l not in labels]
         return self._select_by_indices(indices)
     
-    def join(self, mol) -> Molecule:
+    def join(self, mol: Self) -> Self:
         self.validate()
         mol.validate()
         return self.__class__(
@@ -132,7 +141,7 @@ class Molecule:
             notes=self.notes + mol.notes if self.notes and mol.notes else None
         )
     
-    def get_adj_matrix(self, threshold=1.25):
+    def get_adj_matrix(self, threshold: float = 1.25) -> np.ndarray:
         self.validate()
         D = distance.cdist(self.atomcoords, self.atomcoords)
         r = np.array([covalent_radius(s) for s in self.symbols])

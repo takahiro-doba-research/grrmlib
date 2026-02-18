@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from collections import UserDict
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Mapping, Self
 
 from .data import atomic_number
 
@@ -10,27 +11,30 @@ if TYPE_CHECKING:
     from .grouped_molecules import GroupedMolecules
 
 
-class Molecules(UserDict):
+class Molecules(UserDict[int, "Molecule"]):
+    """
+    Dictionary of Molecule.
+    """
     
-    def __init__(self, mols=None):
+    def __init__(self, mols: Mapping[int, Molecule] | None = None) -> None:
         super().__init__(mols or {})
     
-    def map(self, func) -> Molecules:
+    def map(self, func: Callable[[Molecule], Molecule]) -> Self:
         mols_new = self.__class__()
         for name, mol in self.items():
             mols_new[name] = func(mol)
         return mols_new
     
-    def filter(self, predicate) -> Molecules:
+    def filter(self, predicate: Callable[[Molecule], bool]) -> Self:
         return self.__class__({k: v for k, v in self.items() if predicate(v)})
     
-    def smallest(self, attr) -> Molecule:
+    def smallest(self, attr: str) -> Molecule:
         return min(self.values(), key=lambda m: getattr(m, attr))
     
-    def largest(self, attr) -> Molecule:
+    def largest(self, attr: str) -> Molecule:
         return max(self.values(), key=lambda m: getattr(m, attr))
     
-    def to_separated(self) -> Molecules:
+    def to_separated(self) -> Self:
         mols_new = self.__class__()
         index = 0
         
@@ -52,7 +56,10 @@ class Molecules(UserDict):
         
         return gmols
     
-    def cluster(self, predicate) -> GroupedMolecules:
+    def cluster(
+        self,
+        predicate: Callable[[Molecule, Molecule], bool]
+    ) -> GroupedMolecules:
         from .grouped_molecules import GroupedMolecules
 
         gmols = GroupedMolecules()
@@ -70,7 +77,10 @@ class Molecules(UserDict):
         
         return gmols
     
-    def set_group(self, predicate):
+    def set_group(
+        self,
+        predicate: Callable[[Molecule, Molecule], bool]
+    ) -> Self:
         mols = self.copy()
         group = 0
         mols_rep = []
@@ -87,7 +97,7 @@ class Molecules(UserDict):
         
         return mols
     
-    def to_gv(self, path):
+    def to_gv(self, path: str) -> None:
         num = len(self)
         lines = [" #p\n", " \n"]
         

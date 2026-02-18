@@ -1,21 +1,23 @@
 from __future__ import annotations
 
 from collections import UserDict
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Mapping, Self
 
 if TYPE_CHECKING:
+    from .molecule import Molecule
     from .molecules import Molecules
 
 
-class GroupedMolecules(UserDict):
+class GroupedMolecules(UserDict[int, "Molecules"]):
     """
     Dictionary of Molecules.
     """
     
-    def __init__(self, gmols=None):
+    def __init__(self, gmols: Mapping[int, Molecules] | None = None):
         super().__init__(gmols or {})
     
-    def map(self, func) -> Molecules:
+    def map(self, func: Callable[[Molecule], Molecule]) -> Self:
         gmols_new = self.__class__()
         for group, mols in self.items():
             mols_new = mols.__class__()
@@ -24,7 +26,7 @@ class GroupedMolecules(UserDict):
             gmols_new[group] = mols_new
         return gmols_new
     
-    def map_group(self, func):
+    def map_groups(self, func: Callable[[Molecules], Molecules]) -> Self:
         pass
     
     def flatten(self) -> Molecules:
