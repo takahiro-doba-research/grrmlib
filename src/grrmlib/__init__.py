@@ -35,5 +35,10 @@ from .writers import (
     GaussianOutputWriter,
     ConnectableWriter,
 )
+from .workflows import (
+    connection_factory,
+    build_connection_folder,
+    connect_all_and_write_as_gaussian_input,
+)
 
 __version__ = "0.1.0"
