@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections import UserDict
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -13,48 +12,30 @@ class GroupedMolecules(UserDict):
     Dictionary of Molecules.
     """
     
-    def __init__(self, grouped_mols=None):
-        super().__init__(grouped_mols or {})
+    def __init__(self, gmols=None):
+        super().__init__(gmols or {})
     
-    def map(self, func):
-        grouped_mols_new = self.__class__()
+    def map(self, func) -> Molecules:
+        gmols_new = self.__class__()
         for group, mols in self.items():
             mols_new = mols.__class__()
             for name, mol in mols.items():
                 mols_new[name] = func(mol)
-            grouped_mols_new[group] = mols_new
-        return grouped_mols_new
+            gmols_new[group] = mols_new
+        return gmols_new
     
     def map_group(self, func):
         pass
     
     def flatten(self) -> Molecules:
         from .molecules import Molecules
+
         mols_new = Molecules()
         index = 0
         
-        for group, mols in self.items():
-            for name, mol in mols.items():
+        for _, mols in self.items():
+            for _, mol in mols.items():
                 mols_new[index] = mol
                 index += 1
         
         return mols_new
-    
-    def to_gv_folder(
-        self,
-        folder,
-        name_group="group",
-        name_mol="molecule",
-        basename="gaussian.com"
-    ):
-        folder = Path(folder)
-        
-        for group, mols in self.items():
-            for name, mol in mols.items():
-                path = (
-                    folder
-                    / f"{name_group}{group}"
-                    / f"{name_mol}{name}"
-                )
-                path.mkdir(parents=True, exist_ok=False)
-                mol.to_gv(path / basename)

@@ -1,16 +1,12 @@
 from __future__ import annotations
 
-import copy
 from collections import UserDict
-from pathlib import Path
 from typing import TYPE_CHECKING
 
-import numpy as np
-
 from .data import atomic_number
-#from ..operations import get_distance
 
 if TYPE_CHECKING:
+    from .molecule import Molecule
     from .grouped_molecules import GroupedMolecules
 
 
@@ -19,11 +15,60 @@ class Molecules(UserDict):
     def __init__(self, mols=None):
         super().__init__(mols or {})
     
-    def map(self, func):
+    def map(self, func) -> Molecules:
         mols_new = self.__class__()
         for name, mol in self.items():
             mols_new[name] = func(mol)
         return mols_new
+    
+    def filter(self, predicate) -> Molecules:
+        return self.__class__({k: v for k, v in self.items() if predicate(v)})
+    
+    def smallest(self, attr) -> Molecule:
+        return min(self.values(), key=lambda m: getattr(m, attr))
+    
+    def largest(self, attr) -> Molecule:
+        return max(self.values(), key=lambda m: getattr(m, attr))
+    
+    def to_separated(self) -> Molecules:
+        mols_new = self.__class__()
+        index = 0
+        
+        for mol in self.values():
+            smols = mol.separate()
+            for smol in smols.values():
+                mols_new[index] = smol
+                index += 1
+        
+        return mols_new
+    
+    def separate(self) -> GroupedMolecules:
+        from .grouped_molecules import GroupedMolecules
+
+        gmols = GroupedMolecules()
+        
+        for name, mol in self.items():
+            gmols[name] = mol.separate()
+        
+        return gmols
+    
+    def cluster(self, predicate) -> GroupedMolecules:
+        from .grouped_molecules import GroupedMolecules
+
+        gmols = GroupedMolecules()
+        index = 0
+        
+        for name, mol in self.items():
+            for group, mols in gmols.items():
+                mol_rep = next(iter(mols.values()))
+                if predicate(mol, mol_rep):
+                    gmols[group][name] = mol
+                    break
+            else:
+                gmols[index] = Molecules({name: mol})
+                index += 1
+        
+        return gmols
     
     def set_group(self, predicate):
         mols = self.copy()
@@ -41,74 +86,6 @@ class Molecules(UserDict):
                 group += 1
         
         return mols
-    
-#    def distance_longer(self, label0, label1, distance):
-#        mols_ = {
-#            k: mol for k, mol in self.items()
-#            if distance < get_distance(mol.atomcoords, label0, label1)
-#        }
-#        return Molecules(mols_)
-#    
-#    def distance_shorter(self, label0, label1, distance):
-#        mols_ = {
-#            k: mol for k, mol in self.items()
-#            if get_distance(mol.atomcoords, label0, label1) < distance
-#        }
-#        return Molecules(mols_)
-#    
-#    def distance_between(self, label0, label1, distance0, distance1):
-#        mols_ = {
-#            k: mol for k, mol in self.items()
-#            if distance0 < get_distance(mol.atomcoords, label0, label1) < distance1
-#        }
-#        return Molecules(mols_)
-    
-    def filter(self, predicate):
-        return Molecules({k: v for k, v in self.items() if predicate(v)})
-    
-    def smallest(self, attr):
-        return min(self.values(), key=lambda m: getattr(m, attr))
-    
-    def largest(self, attr):
-        return max(self.values(), key=lambda m: getattr(m, attr))
-    
-    def to_separated(self):
-        mols_new = self.__class__()
-        index = 0
-        
-        for mol in self.values():
-            smols = mol.separate()
-            for smol in smols.values():
-                mols_new[index] = smol
-                index += 1
-        
-        return mols_new
-    
-    def separate(self) -> GroupedMolecules:
-        from .grouped_molecules import GroupedMolecules
-        gmols = GroupedMolecules()
-        
-        for name, mol in self.items():
-            gmols[name] = mol.separate()
-        
-        return gmols
-    
-    def cluster(self, predicate) -> GroupedMolecules:
-        from .grouped_molecules import GroupedMolecules
-        gmols = GroupedMolecules()
-        index = 0
-        
-        for name, mol in self.items():
-            for group, mols in gmols.items():
-                mol_rep = next(iter(mols.values()))
-                if predicate(mol, mol_rep):
-                    gmols[group][name] = mol
-                    break
-            else:
-                gmols[index] = Molecules({name: mol})
-                index += 1
-        
-        return gmols
     
     def to_gv(self, path):
         num = len(self)

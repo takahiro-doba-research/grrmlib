@@ -1,14 +1,16 @@
+from __future__ import annotations
+
 import copy
+from typing import TYPE_CHECKING
 
 import networkx as nx
 import numpy as np
 from scipy.spatial import distance
 
 from .data import covalent_radius
-from .molecules import Molecules
-#from .exceptions import FragmentNotFoundError
 
-#from ..operations import overlay, rotate
+if TYPE_CHECKING:
+    from .molecules import Molecules
 
 
 class Molecule:
@@ -54,7 +56,7 @@ class Molecule:
         
         for k, v in kwargs.items():
             setattr(self, k, v)
-    
+
     def validate(self):
         if self.labels is None or self.symbols is None or self.atomcoords is None:
             raise ValueError("labels, symbols, and atomcoords must be set")
@@ -69,6 +71,9 @@ class Molecule:
         if self.notes is not None:
             if len(self.notes) != n:
                 raise ValueError("notes length mismatch")
+
+    def copy(self) -> Molecule:
+        return copy.deepcopy(self)
     
     def iter_atoms(self, with_notes=False):
         self.validate()
@@ -79,10 +84,7 @@ class Molecule:
             for symbol, atomcoord in zip(self.symbols, self.atomcoords):
                 yield symbol, atomcoord
     
-    def copy(self):
-        return copy.deepcopy(self)
-    
-    def reset_labels(self, offset=0):
+    def reset_labels(self, offset=0) -> Molecule:
         mol = self.copy()
         mol.labels = np.arange(offset + 1, len(mol.labels) + offset + 1)
         return mol
@@ -97,7 +99,7 @@ class Molecule:
     def label_to_index(self, label):
         return self.labels_to_indices([label])[0]
     
-    def _select_by_indices(self, indices):
+    def _select_by_indices(self, indices) -> Molecule:
         indices = list(indices)
         mol = self.copy()
         mol.labels = mol.labels[indices]
@@ -110,20 +112,19 @@ class Molecule:
         )
         return mol
     
-    def select_atoms(self, labels):
+    def select_atoms(self, labels) -> Molecule:
         labels = set(labels)
         indices = [i for i, l in enumerate(self.labels) if l in labels]
         return self._select_by_indices(indices)
     
-    def remove_atoms(self, labels):
+    def remove_atoms(self, labels) -> Molecule:
         labels = set(labels)
         indices = [i for i, l in enumerate(self.labels) if l not in labels]
         return self._select_by_indices(indices)
     
-    def join(self, mol):
+    def join(self, mol) -> Molecule:
         self.validate()
         mol.validate()
-#        mol = mol.reset_labels(max(self.labels))
         return self.__class__(
             labels=np.concatenate([self.labels, mol.labels]),
             symbols=self.symbols + mol.symbols,
@@ -140,7 +141,9 @@ class Molecule:
         np.fill_diagonal(A, False)
         return A
     
-    def separate(self):
+    def separate(self) -> Molecules:
+        from .molecules import Molecules
+        
         self.validate()
         A = self.get_adj_matrix()
         G = nx.from_numpy_array(A)
@@ -151,140 +154,5 @@ class Molecule:
             indices = sorted(component)
             mol = self._select_by_indices(indices)
             mols[i] = mol
-        
-        return mols
-    
-    def to_connectable(self, notes):
-        mol = self.copy()
-        mol.__class__ = ConnectableMolecule
-        mol.notes = notes
-        return mol
-    
-    def to_gv(self, path):
-        self.validate()
-        
-        lines = [
-            f"# {self.functional or 'B3LYP'}/{self.basis_set or '6-31G'}\n",
-            "\n",
-            f"{self.comments or 'title'}\n",
-            "\n",
-            f"{self.charge or 0} {self.mult or 1}\n"
-        ]
-        
-        if self.notes is not None:
-            lines += [
-                f"{s:2s}  {x:17.12f} {y:17.12f} {z:17.12f} {' '.join(map(str, n))}\n"
-                for s, (x, y, z), n in zip(self.symbols, self.atomcoords, self.notes)
-            ]
-        else:
-            lines += [
-                f"{s:2s}  {x:17.12f} {y:17.12f} {z:17.12f}\n"
-                for s, (x, y, z) in zip(self.symbols, self.atomcoords)
-            ]
-        
-        lines += ["\n"]
-        
-        with open(path, "w") as f:
-            f.writelines(lines)
-
-
-class EQ(Molecule):
-    pass
-
-
-class PT(Molecule):
-    
-    def __init__(self, connection=None, **kwargs):
-        super().__init__(**kwargs)
-        self.connection = connection
-
-
-class ConnectableMolecule(Molecule):
-    
-    @property
-    def connectivity(self):
-        """
-        Format of notes
-        ---------------
-        note = [fragment]
-        note = [fragment, label1, label2]
-        note = [fragment, label1, label2, k]
-        
-        - fragment : int
-        - label1, label2 : int (for overlay and rotate functions)
-        - k : int (number of angular configurations)
-        
-        Example
-        -------
-        connectivity = {
-            0: {"labels": [1, 7], "labels_ref": [1, 2, 3], "target": 1, "angles": [0.0]},
-            1: {"labels": [2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]},
-        }
-        """
-        self.validate()
-        connectivity = {}
-        label_to_note = dict(zip(self.labels, self.notes))
-        
-        for label, note in label_to_note.items():
-            fragment = note[0]
-            entry = connectivity.setdefault(fragment, {"labels": []})
-            entry["labels"].append(label)
-            
-            if len(note) >= 3:
-                entry["labels_ref"] = [label, note[1], note[2]]
-                entry["target"] = label_to_note[note[1]][0]
-            
-            if len(note) == 4:
-                k = note[3]
-                entry["angles"] = [360 * i / k for i in range(k)]
-        
-        return connectivity
-    
-    def reset_labels(self, offset=0):
-        mol = super().reset_labels(offset)
-        mapping = dict(zip(self.labels, mol.labels))
-        mol.notes = [
-            [n[0], mapping[n[1]], mapping[n[2]], *n[3:]]
-            if len(n) >= 3 else n
-            for n in self.notes
-        ]
-        return mol
-    
-    def connect(self, mol):
-        fg_self = [f for f, d in mol.connectivity.items() if "angles" in d]
-        
-        if len(fg_self) != 1:
-            raise ValueError("exactly one connectable fragment must exist in mol")
-        
-        fg_self = fg_self[0]
-        fg_mol = mol.connectivity[fg_self]["target"]
-        
-        if fg_mol not in self.connectivity:
-            raise FragmentNotFoundError(f"fragment {fg_mol} is not connectable to this molecule")
-        
-        indices_self = self.labels_to_indices(self.connectivity[fg_mol]["labels_ref"])
-        indices_mol = mol.labels_to_indices(mol.connectivity[fg_self]["labels_ref"])
-        
-        atomcoords_overlay = overlay(
-            self.atomcoords,
-            mol.atomcoords,
-            *[indices_self[i] for i in [1, 0, 2]],
-            *indices_mol
-        )
-        
-        mols = Molecules()
-        angles = mol.connectivity[fg_self]["angles"]
-        self_new = self.remove_atoms(self.connectivity[fg_mol]["labels"])
-        
-        for angle in angles:
-            mol_new = mol.copy()
-            mol_new.atomcoords = rotate(
-                atomcoords_overlay,
-                *indices_mol[:2],
-                angle,
-                degrees=True
-            )
-            mol_new = mol_new.remove_atoms(mol.connectivity[fg_self]["labels"])
-            mols[angle] = self_new.join(mol_new).reset_labels()
         
         return mols
