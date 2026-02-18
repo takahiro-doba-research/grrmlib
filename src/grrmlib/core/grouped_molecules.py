@@ -1,21 +1,25 @@
 from __future__ import annotations
 
+import copy
 from collections import UserDict
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Mapping, Self
+from typing import TYPE_CHECKING, Hashable, Mapping, Self
 
 if TYPE_CHECKING:
     from .molecule import Molecule
     from .molecules import Molecules
 
 
-class GroupedMolecules(UserDict[int, "Molecules"]):
+class GroupedMolecules(UserDict[Hashable, "Molecules"]):
     """
     Dictionary of Molecules.
     """
     
-    def __init__(self, gmols: Mapping[int, Molecules] | None = None):
+    def __init__(self, gmols: Mapping[Hashable, Molecules] | None = None):
         super().__init__(gmols or {})
+
+    def copy(self) -> Self:
+        return copy.deepcopy(self)
     
     def map(self, func: Callable[[Molecule], Molecule]) -> Self:
         gmols_new = self.__class__()
@@ -27,17 +31,17 @@ class GroupedMolecules(UserDict[int, "Molecules"]):
         return gmols_new
     
     def map_groups(self, func: Callable[[Molecules], Molecules]) -> Self:
-        pass
+        return self.__class__(
+            {group: func(mols) for group, mols in self.items()}
+        )
     
     def flatten(self) -> Molecules:
         from .molecules import Molecules
-
-        mols_new = Molecules()
-        index = 0
         
-        for _, mols in self.items():
-            for _, mol in mols.items():
-                mols_new[index] = mol
-                index += 1
+        mols_new = Molecules()
+        
+        for group, mols in self.items():
+            for name, mol in mols.items():
+                mols_new[(group, name)] = mol.copy()
         
         return mols_new

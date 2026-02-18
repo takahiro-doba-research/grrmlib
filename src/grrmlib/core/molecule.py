@@ -82,6 +82,11 @@ class Molecule:
     def copy(self) -> Self:
         return copy.deepcopy(self)
     
+    def with_attr_from(self, mol: Self, attr: str) -> Self:
+        self_new = self.copy()
+        setattr(self_new, attr, getattr(mol, attr))
+        return self_new
+    
     def iter_atoms(self, with_notes: bool = False) -> Iterator[
         tuple[str, np.ndarray] | tuple[str, np.ndarray, Sequence[int]]
     ]:
@@ -156,7 +161,8 @@ class Molecule:
         self.validate()
         A = self.get_adj_matrix()
         G = nx.from_numpy_array(A)
-        components = sorted(nx.connected_components(G), key=len, reverse=True)
+        #components = sorted(nx.connected_components(G), key=len, reverse=True)
+        components = sorted(nx.connected_components(G), key=min)
         
         mols = Molecules()
         for i, component in enumerate(components):

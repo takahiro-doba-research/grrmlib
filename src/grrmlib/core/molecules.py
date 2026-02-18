@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import UserDict
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Mapping, Self
+from typing import TYPE_CHECKING, Hashable, Mapping, Self
 
 from .data import atomic_number
 
@@ -11,13 +11,16 @@ if TYPE_CHECKING:
     from .grouped_molecules import GroupedMolecules
 
 
-class Molecules(UserDict[int, "Molecule"]):
+class Molecules(UserDict[Hashable, "Molecule"]):
     """
     Dictionary of Molecule.
     """
     
-    def __init__(self, mols: Mapping[int, Molecule] | None = None) -> None:
+    def __init__(self, mols: Mapping[Hashable, Molecule] | None = None) -> None:
         super().__init__(mols or {})
+    
+    def copy(self) -> Self:
+        return copy.deepcopy(self)
     
     def map(self, func: Callable[[Molecule], Molecule]) -> Self:
         mols_new = self.__class__()
@@ -33,18 +36,6 @@ class Molecules(UserDict[int, "Molecule"]):
     
     def largest(self, attr: str) -> Molecule:
         return max(self.values(), key=lambda m: getattr(m, attr))
-    
-    def to_separated(self) -> Self:
-        mols_new = self.__class__()
-        index = 0
-        
-        for mol in self.values():
-            smols = mol.separate()
-            for smol in smols.values():
-                mols_new[index] = smol
-                index += 1
-        
-        return mols_new
     
     def separate(self) -> GroupedMolecules:
         from .grouped_molecules import GroupedMolecules
@@ -77,6 +68,11 @@ class Molecules(UserDict[int, "Molecule"]):
         
         return gmols
     
+    def reset_keys(self) -> Self:
+        return self.__class__(
+            {i: mol.copy() for i, mol in enumerate(self.values())}
+        )
+    
     def set_group(
         self,
         predicate: Callable[[Molecule, Molecule], bool]
@@ -91,51 +87,8 @@ class Molecules(UserDict[int, "Molecule"]):
                     mol.group = mol_rep.group
                     break
             else:
-                mol.group = f"G{group}"
+                mol.group = group
                 mols_rep.append(mol)
                 group += 1
         
         return mols
-    
-    def to_gv(self, path: str) -> None:
-        num = len(self)
-        lines = [" #p\n", " \n"]
-        
-        for i, mol in enumerate(self.values()):
-            lines += [
-                " GradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad\n",
-                "                          Input orientation:                          \n",
-                " ---------------------------------------------------------------------\n",
-                " Center     Atomic      Atomic             Coordinates (Angstroms)    \n",
-                " Number     Number       Type             X           Y           Z   \n",
-                " ---------------------------------------------------------------------\n",
-                " ---------------------------------------------------------------------\n",
-                " \n",
-                " GradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad\n",
-                f" Step number   1 out of a maximum of   2 on scan point {i+1:5d} out of {num:5d}\n",
-                " \n",
-                " GradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad\n",
-                "                          Input orientation:                          \n",
-                " ---------------------------------------------------------------------\n",
-                " Center     Atomic      Atomic             Coordinates (Angstroms)    \n",
-                " Number     Number       Type             X           Y           Z   \n",
-                " ---------------------------------------------------------------------\n",
-                *[
-                    f"{i+1:7d} {atomic_number(sym):10d}           0     {coord[0]:11.6f} {coord[1]:11.6f} {coord[2]:11.6f}\n"
-                    for i, (sym, coord) in enumerate(zip(mol.symbols, mol.atomcoords))
-                ],
-                " ---------------------------------------------------------------------\n",
-                f" SCF Done:  E({mol.functional or 'B3LYP'}) = {mol.scfenergy:15.12f}     A.U.\n",
-                " \n",
-                " GradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad\n",
-                f" Step number   2 out of a maximum of   2 on scan point {i+1:5d} out of {num:5d}\n",
-                " \n",
-            ]
-        
-        lines += [
-            " GradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad\n",
-            " Normal termination of Gaussian 16\n"
-        ]
-        
-        with open(path, "w") as f:
-            f.writelines(lines)

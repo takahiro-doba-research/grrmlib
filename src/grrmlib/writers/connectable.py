@@ -1,18 +1,24 @@
 from pathlib import Path
 
+from ..core import Molecule, Molecules
+
 
 class ConnectableWriter:
     
     def __init__(
         self,
         *,
-        header=None,
-        footer=None,
-    ):
+        header: list[str] = None,
+        footer: list[str] = None,
+    ) -> None:
         self.header = header
         self.footer = footer
     
-    def write(self, mol, path):
+    def write(
+        self,
+        mol: Molecule,
+        path: str | Path = "connectable.com"
+    ) -> None:
         path = Path(path)
         
         lines = []
@@ -31,12 +37,12 @@ class ConnectableWriter:
     
     def write_grouped(
         self,
-        gmols,
-        folder,
-        prefix_group="group",
-        prefix_mol="molecule",
-        basename="connectable.com",
-    ):
+        gmols: Molecules,
+        folder: str | Path,
+        prefix_group: str = "group",
+        prefix_mol: str = "molecule",
+        basename: str = "connectable.com",
+    ) -> None:
         folder = Path(folder)
         
         for group, mols in gmols.items():
@@ -47,4 +53,7 @@ class ConnectableWriter:
                     / f"{prefix_mol}{name}"
                 )
                 folder_new.mkdir(parents=True, exist_ok=True)
-                self.write(mol, folder_new / basename)
+                try:
+                    self.write(mol, folder_new / basename)
+                except FileExistsError as e:
+                    print(e)

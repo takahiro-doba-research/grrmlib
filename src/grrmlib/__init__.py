@@ -11,6 +11,8 @@ from .core import (
 #    ReactionPathNetwork,
 #    GroupedNetwork,
     is_identical,
+    covalent_radius,
+    atomic_number,
 )
 from .operations import (
     FragmentNotFoundError,

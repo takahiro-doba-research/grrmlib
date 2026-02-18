@@ -5,3 +5,4 @@ from .grouped_molecules import GroupedMolecules
 #from .grouped_network import GroupedNetwork
 
 from .predicates import is_identical
+from .data import covalent_radius, atomic_number
