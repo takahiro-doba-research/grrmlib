@@ -4,3 +4,4 @@ from .gaussian import (
 )
 from .grrm import *
 from .connectable import ConnectableWriter
+from .xyz import XYZWriter

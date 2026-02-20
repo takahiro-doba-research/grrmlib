@@ -63,7 +63,10 @@ class Molecule:
         
         for k, v in kwargs.items():
             setattr(self, k, v)
-
+    
+    def __len__(self) -> int:
+        return len(self.atomcoords)
+    
     def validate(self) -> None:
         if self.labels is None or self.symbols is None or self.atomcoords is None:
             raise ValueError("labels, symbols, and atomcoords must be set")
@@ -78,7 +81,7 @@ class Molecule:
         if self.notes is not None:
             if len(self.notes) != n:
                 raise ValueError("notes length mismatch")
-
+    
     def copy(self) -> Self:
         return copy.deepcopy(self)
     

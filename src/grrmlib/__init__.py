@@ -36,6 +36,7 @@ from .writers import (
     GaussianInputWriter,
     GaussianOutputWriter,
     ConnectableWriter,
+    XYZWriter,
 )
 from .workflows import (
     connection_factory,

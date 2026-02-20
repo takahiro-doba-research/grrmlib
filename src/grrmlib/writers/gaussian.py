@@ -30,9 +30,12 @@ class GaussianInputWriter:
     def write(
         self,
         mol: Molecule,
-        path: str = "gaussian_input.com"
-    ) -> None:
+        path: str | Path = "gaussian_input.com",
+        *,
+        exist_ok: bool = False
+    ) -> Path:
         path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
         
         lines = []
         
@@ -58,16 +61,20 @@ class GaussianInputWriter:
         if self.footer:
             lines += self.footer
         
-        with path.open("x") as f:
+        with path.open("w" if exist_ok else "x") as f:
             f.writelines(lines)
+        
+        return path
     
     def write_grouped(
         self,
         gmols: GroupedMolecules,
         folder: str | Path,
-        prefix_group: str = "group",
-        prefix_mol: str = "molecule",
-        basename: str = "gaussian_input.com",
+        prefix_group: str | Path = "group",
+        prefix_mol: str | Path = "molecule",
+        basename: str | Path = "gaussian_input.com",
+        *,
+        exist_ok: bool = False
     ) -> None:
         folder = Path(folder)
         
@@ -78,11 +85,7 @@ class GaussianInputWriter:
                     / f"{prefix_group}{group}"
                     / f"{prefix_mol}{name}"
                 )
-                folder_new.mkdir(parents=True, exist_ok=True)
-                try:
-                    self.write(mol, folder_new / basename)
-                except FileExistsError as e:
-                    print(e)
+                self.write(mol, folder_new / basename, exist_ok=exist_ok)
 
 
 class GaussianOutputWriter:
@@ -91,8 +94,10 @@ class GaussianOutputWriter:
         self,
         mols: Molecules,
         path: str | Path = "gaussian_scan.log"
-    ) -> None:
+    ) -> Path:
         path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        
         num = len(mols)
         lines = [" #p\n", " \n"]
         
@@ -134,3 +139,5 @@ class GaussianOutputWriter:
         
         with path.open("x") as f:
             f.writelines(lines)
+        
+        return path
