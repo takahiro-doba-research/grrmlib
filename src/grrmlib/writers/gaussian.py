@@ -93,7 +93,9 @@ class GaussianOutputWriter:
     def write_scan(
         self,
         mols: Molecules,
-        path: str | Path = "gaussian_scan.log"
+        path: str | Path = "gaussian_scan.log",
+        *,
+        exist_ok: bool = False
     ) -> Path:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -137,7 +139,7 @@ class GaussianOutputWriter:
             " Normal termination of Gaussian 16\n"
         ]
         
-        with path.open("x") as f:
+        with path.open("w" if exist_ok else "x") as f:
             f.writelines(lines)
         
         return path
