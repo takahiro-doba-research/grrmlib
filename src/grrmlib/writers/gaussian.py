@@ -16,8 +16,8 @@ class GaussianInputWriter:
         nprocshared: int | None = None,
         mem: str | None = None,
         chk: str | None = None,
-        route: str | None = None,
-        title: str | None = None,
+        route: list[str] | None = None,
+        title: list[str] | None = None,
         with_notes: bool = False,
     ) -> None:
         self.nprocshared = nprocshared
@@ -42,10 +42,16 @@ class GaussianInputWriter:
         return lines
     
     def _build_route(self) -> list[str]:
-        return [f"#{self.route or ''}\n"]
+        if self.route is not None:
+            return self.route
+        else:
+            return ["#\n"]
     
     def _build_title(self) -> list[str]:
-        return [f"{self.title or 'None'}\n"]
+        if self.title is not None:
+            return self.title
+        else:
+            return ["None\n"]
     
     def _build_charge_mult(self, mol: Molecule) -> list[str]:
         charge = mol.charge if mol.charge is not None else 0
