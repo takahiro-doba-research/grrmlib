@@ -24,7 +24,7 @@ def read_eq_list(path):
         atomcoords = np.array([list(map(float, line.split()[1:4])) for line in lines_coord])
         scfenergy = float(re.search(r"\(\s*(-?\d+\.?\d+)\s*:", lines_eq[index_energy]).group(1))
         afirenergy = float(re.search(r"=\s*(-?\d+\.?\d+)\s*\(", lines_eq[index_energy]).group(1))
-        mult = int(float(re.search(r"=\s*(-?\d+\.?\d+)", lines_eq[index_energy + 1]).group(1)))
+        mult = int(float(re.search(r"=\s*(-?\d+\.?\d+)", lines_eq[index_energy + 1]).group(1))) * 2 + 1
         zpve = float(re.search(r"=\s*(-?\d+\.?\d+)", lines_eq[index_energy + 2]).group(1))
         lines_nmeigen = lines_eq[index_energy + 4:]
         nmeigen = np.concatenate([list(map(float, line.split())) for line in lines_nmeigen])

@@ -149,6 +149,11 @@ class Molecule:
             notes=self.notes + mol.notes if self.notes and mol.notes else None
         )
     
+    def get_distance(self, label0: int, label1: int) -> float:
+        from ..operations import get_distance
+        indices = self.labels_to_indices([label0, label1])
+        return get_distance(self.atomcoords, *indices)
+    
     def get_adj_matrix(self, threshold: float = 1.25) -> np.ndarray:
         self.validate()
         D = distance.cdist(self.atomcoords, self.atomcoords)

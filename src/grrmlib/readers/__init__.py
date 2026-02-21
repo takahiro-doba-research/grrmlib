@@ -1,5 +1,5 @@
 # Gaussian
-from .gaussian import read_gaussian_input
+from .gaussian import GaussianInputReader, read_gaussian_input
 
 # GRRM
 from .eq_list import read_eq_list

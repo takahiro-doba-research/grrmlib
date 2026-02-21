@@ -24,7 +24,7 @@ def read_pt_list(path):
         atomcoords = np.array([list(map(float, line.split()[1:4])) for line in lines_coord])
         scfenergy = float(re.search(r"\(\s*(-?\d+\.?\d+)\s*:", lines_pt[index_energy]).group(1))
         afirenergy = float(re.search(r"=\s*(-?\d+\.?\d+)\s*\(", lines_pt[index_energy]).group(1))
-        mult = int(float(re.search(r"=\s*(-?\d+\.?\d+)", lines_pt[index_energy + 1]).group(1)))
+        mult = int(float(re.search(r"=\s*(-?\d+\.?\d+)", lines_pt[index_energy + 1]).group(1))) * 2 + 1
         zpve = float(re.search(r"=\s*(-?\d+\.?\d+)", lines_pt[index_energy + 2]).group(1))
         index_connection = [i for i, line in enumerate(lines_pt) if line.startswith("CONNECTION")][0]
         lines_nmeigen = lines_pt[index_energy + 4:index_connection]

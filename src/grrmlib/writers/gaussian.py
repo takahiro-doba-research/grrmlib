@@ -16,16 +16,70 @@ class GaussianInputWriter:
         nprocshared: int | None = None,
         mem: str | None = None,
         chk: str | None = None,
-        header: list[str] | None = None,
-        footer: list[str] | None = None,
+        route: str | None = None,
+        title: str | None = None,
         with_notes: bool = False,
     ) -> None:
         self.nprocshared = nprocshared
         self.mem = mem
         self.chk = chk
-        self.header = header
-        self.footer = footer
+        self.route = route
+        self.title = title
         self.with_notes = with_notes
+    
+    def _build_link0(self) -> list[str]:
+        lines = []
+        
+        if self.nprocshared is not None:
+            lines.append(f"%NProcShared={self.nprocshared}\n")
+        
+        if self.mem is not None:
+            lines.append(f"%Mem={self.mem}\n")
+        
+        if self.chk is not None:
+            lines.append(f"%Chk={self.chk}\n")
+        
+        return lines
+    
+    def _build_route(self) -> list[str]:
+        return [f"#{self.route or ''}\n"]
+    
+    def _build_title(self) -> list[str]:
+        return [f"{self.title or 'None'}\n"]
+    
+    def _build_charge_mult(self, mol: Molecule) -> list[str]:
+        charge = mol.charge if mol.charge is not None else 0
+        mult = mol.mult if mol.mult is not None else 1
+        return [f"{charge} {mult}\n"]
+    
+    def _build_atomcoords(self, mol: Molecule) -> list[str]:
+        lines = []
+        
+        if self.with_notes:
+            for s, (x, y, z), n in mol.iter_atoms(with_notes=True):
+                lines.append(
+                    f"{s:2s}  {x:17.12f} {y:17.12f} {z:17.12f}"
+                    f" {' '.join(map(str, n))}\n"
+                )
+        else:
+            for s, (x, y, z) in mol.iter_atoms():
+                lines.append(
+                    f"{s:2s}  {x:17.12f} {y:17.12f} {z:17.12f}\n"
+                )
+        
+        return lines
+    
+    def build(self, mol: Molecule) -> str:
+        lines = []
+        lines += self._build_link0()
+        lines += self._build_route()
+        lines.append("\n")
+        lines += self._build_title()
+        lines.append("\n")
+        lines += self._build_charge_mult(mol)
+        lines += self._build_atomcoords(mol)
+        lines.append("\n")
+        return "".join(lines)
     
     def write(
         self,
@@ -37,32 +91,10 @@ class GaussianInputWriter:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         
-        lines = []
-        
-        if self.nprocshared is not None:
-            lines.append(f"%nprocshared={self.nprocshared}\n")
-        
-        if self.mem is not None:
-            lines.append(f"%mem={self.mem}\n")
-        
-        if self.chk is not None:
-            lines.append(f"%chk={self.chk}\n")
-        
-        if self.header:
-            lines += self.header
-        
-        if self.with_notes:
-            for s, (x, y, z), n in mol.iter_atoms(with_notes=True):
-                lines.append(f"{s:2s}  {x:17.12f} {y:17.12f} {z:17.12f} {' '.join(map(str, n))}\n")
-        else:
-            for s, (x, y, z) in mol.iter_atoms():
-                lines.append(f"{s:2s}  {x:17.12f} {y:17.12f} {z:17.12f}\n")
-        
-        if self.footer:
-            lines += self.footer
+        text = self.build(mol)
         
         with path.open("w" if exist_ok else "x") as f:
-            f.writelines(lines)
+            f.write(text)
         
         return path
     
