@@ -1,9 +1,9 @@
 import networkx as nx
 
-from .molecules import EQs, PTs
+from .molecules import Molecules
 
 
-class GroupNetwork:
+class GroupedNetwork:
     
     def __init__(self):
         self._G = nx.Graph()
@@ -23,7 +23,7 @@ class GroupNetwork:
                     node[1]["EQs"][n] = eq
                     break
             else:
-                nodes.append((n_group, {"EQs": EQs({n: eq})}))
+                nodes.append((n_group, {"EQs": Molecules({n: eq})}))
         self._G.add_nodes_from(nodes)
         
         edges = []
@@ -35,7 +35,7 @@ class GroupNetwork:
                     edge[2]["PTs"][k] = pt
                     break
             else:
-                edges.append((u_group, v_group, {"PTs": PTs({k: pt})}))
+                edges.append((u_group, v_group, {"PTs": Molecules({k: pt})}))
         self._G.add_edges_from(edges)
     
     def get_eqs(self, n):

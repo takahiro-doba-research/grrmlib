@@ -30,7 +30,7 @@ def read_pt_list(path):
         lines_nmeigen = lines_pt[index_energy + 4:index_connection]
         nmeigen = np.concatenate([list(map(float, line.split())) for line in lines_nmeigen])
         connection = re.search(r":\s*(\d+|\?\?)\s*-\s*(\d+|\?\?)", lines_pt[index_connection]).groups()
-        connection = tuple(f"EQ{num}" for num in connection)
+        connection = tuple(n if n == "??" else int(n) for n in connection)
         mol = Molecule(
             name=name,
             mult=mult,

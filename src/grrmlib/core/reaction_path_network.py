@@ -1,30 +1,59 @@
+import copy
+from typing import Callable, Hashable, Self
+
 import networkx as nx
 
-from .molecules import PTs
+from .molecule import Molecule
+from .molecules import Molecules
+from .grouped_network import GroupedNetwork
 
 
-class ReactionPathNetwork:
+class ReactionPathNetwork(nx.MultiGraph):
     
-    def __init__(self):
-        self._G = nx.MultiGraph()
+    def __init__(
+        self,
+        *,
+        eqs: Molecules | None = None,
+        pts: Molecules | None = None,
+    ) -> None:
+        super().__init__()
+        
+        if eqs is not None:
+            self.add_eqs(eqs)
+        
+        if pts is not None:
+            self.add_pts(pts)
     
-    def __getattr__(self, name):
-        return getattr(self._G, name)
+    def add_eqs(self, mols: Molecules) -> Self:
+        nodes = [(mol.name, {"EQ": mol}) for mol in mols.values()]
+        self.add_nodes_from(nodes)
+        return self
     
-    def to_networkx(self):
-        return self._G
+    def add_pts(self, mols: Molecules) -> Self:
+        edges = [(*mol.connection, mol.name, {"PT": mol}) for mol in mols.values()]
+        self.add_edges_from(edges)
+        return self
     
-    def add_eqs(self, eqs):
-        nodes = [(eq.name, {"EQ": eq}) for eq in eqs.values()]
-        self._G.add_nodes_from(nodes)
+    def copy(self) -> Self:
+        return copy.deepcopy(self)
     
-    def add_pts(self, pts):
-        edges = [(*pt.connection, pt.name, {"PT": pt}) for pt in pts.values()]
-        self._G.add_edges_from(edges)
+    def remove_eq(self, name: Hashable) -> Self:
+        if name in self:
+            self.remove_node(name)
+        return self
     
-    def remove_eq(self, name):
-        if name in self._G:
-            self._G.remove_node(name)
+    def get_pts(self, u: Hashable, v: Hashable) -> Molecules:
+        edge_data = self.get_edge_data(u, v)
+        
+        if edge_data is None:
+            return Molecules()
+        
+        return Molecules(
+            {k: d["PT"].copy() for k, d in edge_data.items()}
+        )
     
-    def get_pts(self, u, v):
-        return PTs({n: d["PT"] for n, d in self._G.get_edge_data(u, v).items()})
+    def cluster(
+        self,
+        predicate: Callable[[Molecule, Molecule], bool]
+    ) -> GroupedNetwork:
+        pass
