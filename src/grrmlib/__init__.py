@@ -10,7 +10,7 @@ from .core import (
     Molecules,
     GroupedMolecules,
     ReactionPathNetwork,
-    GroupedNetwork,
+    GroupedReactionPathNetwork,
     is_identical,
     covalent_radius,
     atomic_number,

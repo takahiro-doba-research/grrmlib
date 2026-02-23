@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from collections import UserDict
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Hashable, Mapping, Self
@@ -60,10 +61,10 @@ class Molecules(UserDict[Hashable, "Molecule"]):
             for group, mols in gmols.items():
                 mol_rep = next(iter(mols.values()))
                 if predicate(mol, mol_rep):
-                    gmols[group][name] = mol
+                    gmols[group][name] = mol.copy()
                     break
             else:
-                gmols[index] = Molecules({name: mol})
+                gmols[index] = Molecules({name: mol.copy()})
                 index += 1
         
         return gmols
