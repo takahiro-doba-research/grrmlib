@@ -1,6 +1,8 @@
 # Gaussian
 from .gaussian import GaussianInputReader, read_gaussian_input
 
+from .xyz import XYZReader
+
 # GRRM
 from .eq_list import read_eq_list
 from .pt_list import read_pt_list
