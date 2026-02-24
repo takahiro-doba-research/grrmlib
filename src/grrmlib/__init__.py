@@ -41,6 +41,7 @@ from .writers import (
     ConnectableWriter,
     XYZWriter,
 )
+from .jobs import GaussianJob
 from .workflows import (
     SeparationWorkflow,
     connection_factory,
