@@ -1,3 +1,4 @@
+from .separation import SeparationWorkflow
 from .connection import (
     connection_factory,
     build_connection_folder,
