@@ -92,14 +92,14 @@ class GaussianInputWriter:
         mol: Molecule,
         path: str | Path = "gaussian_input.com",
         *,
-        exist_ok: bool = False
+        overwrite: bool = False
     ) -> Path:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         
         text = self.build(mol)
         
-        with path.open("w" if exist_ok else "x") as f:
+        with path.open("w" if overwrite else "x") as f:
             f.write(text)
         
         return path
@@ -112,7 +112,7 @@ class GaussianInputWriter:
         prefix_mol: str | Path = "molecule",
         basename: str | Path = "gaussian_input.com",
         *,
-        exist_ok: bool = False
+        overwrite: bool = False
     ) -> None:
         folder = Path(folder)
         
@@ -123,7 +123,7 @@ class GaussianInputWriter:
                     / f"{prefix_group}{group}"
                     / f"{prefix_mol}{name}"
                 )
-                self.write(mol, folder_new / basename, exist_ok=exist_ok)
+                self.write(mol, folder_new / basename, overwrite=overwrite)
 
 
 class GaussianOutputWriter:
@@ -133,7 +133,7 @@ class GaussianOutputWriter:
         mols: Molecules,
         path: str | Path = "gaussian_scan.log",
         *,
-        exist_ok: bool = False
+        overwrite: bool = False
     ) -> Path:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -165,7 +165,7 @@ class GaussianOutputWriter:
                     for j, (s, (x, y, z)) in enumerate(mol.iter_atoms(), start=1)
                 ],
                 " ---------------------------------------------------------------------\n",
-                f" SCF Done:  E({mol.functional or 'B3LYP'}) = {mol.scfenergy:15.12f}     A.U.\n",
+                f" SCF Done:  E = {mol.scfenergy:15.12f}     A.U.\n",
                 " \n",
                 " GradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad\n",
                 f" Step number   2 out of a maximum of   2 on scan point {i:5d} out of {num:5d}\n",
@@ -177,7 +177,7 @@ class GaussianOutputWriter:
             " Normal termination of Gaussian 16\n"
         ]
         
-        with path.open("w" if exist_ok else "x") as f:
+        with path.open("w" if overwrite else "x") as f:
             f.writelines(lines)
         
         return path

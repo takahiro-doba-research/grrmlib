@@ -19,7 +19,7 @@ class ConnectableWriter:
         mol: Molecule,
         path: str | Path = "connectable.com",
         *,
-        exist_ok: bool = False
+        overwrite: bool = False
     ) -> Path:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -35,7 +35,7 @@ class ConnectableWriter:
         if self.footer:
             lines += self.footer
         
-        with path.open("w" if exist_ok else "x") as f:
+        with path.open("w" if overwrite else "x") as f:
             f.writelines(lines)
         
         return path
@@ -48,7 +48,7 @@ class ConnectableWriter:
         prefix_mol: str | Path = "molecule",
         basename: str | Path = "connectable.com",
         *,
-        exist_ok: bool = False
+        overwrite: bool = False
     ) -> None:
         folder = Path(folder)
         
@@ -59,4 +59,4 @@ class ConnectableWriter:
                     / f"{prefix_group}{group}"
                     / f"{prefix_mol}{name}"
                 )
-                self.write(mol, folder_new / basename, exist_ok=exist_ok)
+                self.write(mol, folder_new / basename, overwrite=overwrite)
