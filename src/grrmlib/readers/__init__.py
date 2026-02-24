@@ -10,4 +10,4 @@ from .min import MIN, read_min
 from .lup_ts import LUPTS, read_lup_ts
 
 # Custom
-from .connectable import read_connectable
+from .connectable import ConnectableReader, read_connectable

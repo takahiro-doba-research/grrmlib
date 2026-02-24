@@ -1,6 +1,7 @@
 from .readers import (
     GaussianInputReader,
     read_gaussian_input,
+    ConnectableReader,
     read_connectable,
     XYZReader,
     read_eq_list,
