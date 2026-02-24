@@ -21,47 +21,47 @@ if TYPE_CHECKING:
 
 
 class Molecule:
+    """
+    See cclib for the attribute names.
+    (https://cclib.github.io/data.html)
+    """
+    _allowed_extra = {
+        "nprocshared",
+        "mem",
+        "chk",
+        "route",
+        "title",
+        "scfenergy",
+        "afirenergy",
+        "zpve",
+        "grads",
+        "hessian",
+        "nmeigen",
+    }
     
     def __init__(
         self,
         name: str | None = None,
-        functional: str | None = None,
-        basis_set: str | None = None,
-        comments: str | None = None,
         charge: int | None = None,
         mult: int | None = None,
         labels: np.ndarray | None = None,
         symbols: Sequence[str] | None = None,
         atomcoords: np.ndarray | None = None,
         notes: Sequence[Sequence[int]] | None = None,
-        scfenergy: float | None = None,
-        afirenergy: float | None = None,
-        zpve: float | None = None,
-        grads: np.ndarray | None = None,
-        hessian: np.ndarray | None = None,
-        nmeigen: np.ndarray | None = None,
-        status: str | None = None,
         **kwargs: Any
     ) -> None:
+        
         self.name = name
-        self.functional = functional
-        self.basis_set = basis_set
-        self.comments = comments
         self.charge = charge
         self.mult = mult
         self.labels = labels
         self.symbols = symbols
         self.atomcoords = atomcoords
         self.notes = notes
-        self.scfenergy = scfenergy
-        self.afirenergy = afirenergy
-        self.zpve = zpve
-        self.grads = grads
-        self.hessian = hessian
-        self.nmeigen = nmeigen
-        self.status = status
         
         for k, v in kwargs.items():
+            if not hasattr(self, k) and k not in self._allowed_extra:
+                raise TypeError(f"Unknown attribute: {k}")
             setattr(self, k, v)
     
     def __len__(self) -> int:
