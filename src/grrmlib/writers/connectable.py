@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from ..core import Molecule, Molecules
+from ..core import Molecule, GroupedMolecules
 
 
 class ConnectableWriter:
@@ -8,11 +8,45 @@ class ConnectableWriter:
     def __init__(
         self,
         *,
-        header: list[str] = None,
-        footer: list[str] = None,
+        title: list[str] | None = None,
     ) -> None:
-        self.header = header
-        self.footer = footer
+        self.title = title
+    
+    def _build_route(self) -> list[str]:
+        return ["#\n"]
+    
+    def _build_title(self) -> list[str]:
+        if self.title is not None:
+            return self.title
+        else:
+            return ["None\n"]
+    
+    def _build_charge_mult(self, mol: Molecule) -> list[str]:
+        charge = mol.charge if mol.charge is not None else 0
+        mult = mol.mult if mol.mult is not None else 1
+        return [f"{charge} {mult}\n"]
+    
+    def _build_atomcoords(self, mol: Molecule) -> list[str]:
+        lines = []
+        
+        for s, (x, y, z), n in mol.iter_atoms(with_notes=True):
+            lines.append(
+                f"{s:2s}  {x:17.12f} {y:17.12f} {z:17.12f}"
+                f" {' '.join(map(str, n))}\n"
+            )
+        
+        return lines
+    
+    def build(self, mol: Molecule) -> str:
+        lines = []
+        lines += self._build_route()
+        lines.append("\n")
+        lines += self._build_title()
+        lines.append("\n")
+        lines += self._build_charge_mult(mol)
+        lines += self._build_atomcoords(mol)
+        lines.append("\n")
+        return "".join(lines)
     
     def write(
         self,
@@ -24,25 +58,16 @@ class ConnectableWriter:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         
-        lines = []
-        
-        if self.header:
-            lines += self.header
-        
-        for s, (x, y, z), n in mol.iter_atoms(with_notes=True):
-            lines.append(f"{s:2s}  {x:17.12f} {y:17.12f} {z:17.12f} {' '.join(map(str, n))}\n")
-        
-        if self.footer:
-            lines += self.footer
+        text = self.build(mol)
         
         with path.open("w" if overwrite else "x") as f:
-            f.writelines(lines)
+            f.write(text)
         
         return path
     
     def write_grouped(
         self,
-        gmols: Molecules,
+        gmols: GroupedMolecules,
         folder: str | Path,
         prefix_group: str | Path = "group",
         prefix_mol: str | Path = "molecule",
