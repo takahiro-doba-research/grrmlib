@@ -120,8 +120,8 @@ class GaussianInputWriter:
             for name, mol in mols.items():
                 folder_new = (
                     folder
-                    / f"{prefix_group}{group}"
-                    / f"{prefix_mol}{name}"
+                    / f"{prefix_group}={group}"
+                    / f"{prefix_mol}={name}"
                 )
                 self.write(mol, folder_new / basename, overwrite=overwrite)
 
