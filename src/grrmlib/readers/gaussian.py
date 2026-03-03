@@ -1,7 +1,9 @@
 import re
 from pathlib import Path
 
+import cclib
 import numpy as np
+import periodictable
 
 from ..core import Molecule
 
@@ -87,6 +89,26 @@ class GaussianInputReader:
             notes=notes,
         )
 
+
+class GaussianOutputReader:
+    
+    def read(self, path: str | Path) -> Molecule:
+        path = Path(path)
+        parser = cclib.io.ccopen(path)
+        data = parser.parse()
+        
+        symbols = [periodictable.elements[n] for n in data.atomnos]
+        labels = np.arange(1, len(symbols) + 1)
+        
+        return Molecule(
+            charge=data.charge,
+            mult=data.mult,
+            labels=labels,
+            symbols=symbols,
+            atomcoords=data.atomcoords[-1],
+            scfenergy=data.scfenergies[-1],
+            success=data.metadata["success"],
+        )
 
 def read_gaussian_input(path):
     

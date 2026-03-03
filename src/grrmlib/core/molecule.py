@@ -37,6 +37,7 @@ class Molecule:
         "grads",
         "hessian",
         "nmeigen",
+        "success",
     }
     
     def __init__(

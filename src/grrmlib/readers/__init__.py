@@ -1,5 +1,9 @@
 # Gaussian
-from .gaussian import GaussianInputReader, read_gaussian_input
+from .gaussian import (
+    GaussianInputReader,
+    GaussianOutputReader,
+    read_gaussian_input
+)
 
 from .xyz import XYZReader
 
