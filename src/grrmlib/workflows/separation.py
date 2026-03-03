@@ -22,7 +22,7 @@ class SeparationWorkflow:
         path_gaussian_sp: str | Path,
         path_grrm_min: str | Path,
     ) -> None:
-        self.folder = folder
+        self.folder = Path(folder)
         self.path_eq_list = Path(path_eq_list)
         self.path_gaussian_sp = Path(path_gaussian_sp)
         self.path_grrm_min = Path(path_grrm_min)
@@ -46,6 +46,11 @@ class SeparationWorkflow:
             "SEQ",
             "gaussian_sp.com"
         )
+    
+    def list_gaussian_sp(self) -> None:
+        paths = sorted(self.folder.rglob("gaussian_sp.com"))
+        Path("gaussian_sp.txt").write_text("\n".join(str(p) for p in paths))
+        print(f"{len(paths)} jobs listed.")
     
     def run_gaussian_sp():
         pass
