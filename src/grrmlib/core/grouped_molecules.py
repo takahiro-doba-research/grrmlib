@@ -47,7 +47,10 @@ class GroupedMolecules(UserDict[Hashable, "Molecules"]):
         mols_new = Molecules()
         
         for group, mols in self.items():
+            group = group if isinstance(group, tuple) else (group, )
+            
             for name, mol in mols.items():
-                mols_new[(group, name)] = mol.copy()
+                name = name if isinstance(name, tuple) else (name, )
+                mols_new[group + name] = mol.copy()
         
         return mols_new
