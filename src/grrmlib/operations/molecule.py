@@ -1,16 +1,14 @@
 from ..core import Molecule, Molecules
 
 
-def expand_charge_mult(
+def product_charge_mult(
     mol: Molecule,
     charges: list[int] | int,
     mults: list[int] | int
 ) -> Molecules:
-    if isinstance(charges, int):
-        charges = [charges]
     
-    if isinstance(mults, int):
-        mults = [mults]
+    charges = [charges] if isinstance(charges, int) else charges
+    mults = [mults] if isinstance(mults, int) else mults
     
     mols = Molecules()
     

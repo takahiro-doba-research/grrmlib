@@ -35,6 +35,12 @@ class GroupedMolecules(UserDict[Hashable, "Molecules"]):
             {group: func(mols) for group, mols in self.items()}
         )
     
+    def contract(self, func: Callable[[Molecules], Molecule]) -> Molecules:
+        from .molecules import Molecules
+        return Molecules(
+            {group: func(mols) for group, mols in self.items()}
+        )
+    
     def flatten(self) -> Molecules:
         from .molecules import Molecules
         

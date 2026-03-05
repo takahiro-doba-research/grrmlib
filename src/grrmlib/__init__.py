@@ -27,7 +27,7 @@ from .operations import (
     get_dihedral_angle,
     overlay,
     rotate,
-    expand_charge_mult,
+    product_charge_mult,
     read_connectivity,
     step_to_angles,
     reset_connectable_notes,
@@ -51,4 +51,4 @@ from .workflows import (
     connect_all_and_write_as_gaussian_input,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

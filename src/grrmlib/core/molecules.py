@@ -29,6 +29,12 @@ class Molecules(UserDict[Hashable, "Molecule"]):
             mols_new[name] = func(mol)
         return mols_new
     
+    def expand(self, func: Callable[[Molecule], Molecules]) -> GroupedMolecules:
+        from .grouped_molecules import GroupedMolecules
+        return GroupedMolecules(
+            {name: func(mol) for name, mol in self.items()}
+        )
+    
     def filter(self, predicate: Callable[[Molecule], bool]) -> Self:
         return self.__class__({k: v for k, v in self.items() if predicate(v)})
     
