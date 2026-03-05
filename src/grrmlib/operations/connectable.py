@@ -1,7 +1,7 @@
 import numpy as np
 
+from .atomcoords import overlay, rotate
 from .exceptions import FragmentNotFoundError, ManyFragmentsFoundError
-from .molecule import overlay, rotate
 from ..core import Molecules, GroupedMolecules
 
 

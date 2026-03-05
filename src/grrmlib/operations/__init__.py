@@ -4,18 +4,14 @@ from .exceptions import (
     ChargeError,
     MultiplicityError,
 )
-from .molecule import (
-    with_labels_from,
-    with_symbols_from,
-    with_atomcoords_from,
-    with_notes_from,
-    with_header_from,
-    with_footer_from,
-    duplicate_by_charge_mult,
+from .atomcoords import (
     get_distance,
     get_dihedral_angle,
     overlay,
     rotate,
+)
+from .molecule import (
+    duplicate_by_charge_mult,
 )
 from .connectable import (
     read_connectivity,
