@@ -12,6 +12,7 @@ from typing import (
 
 import networkx as nx
 import numpy as np
+from periodictable import elements
 from scipy.spatial import distance
 
 from .data import covalent_radius
@@ -149,6 +150,20 @@ class Molecule:
             atomcoords=np.vstack([self.atomcoords, mol.atomcoords]),
             notes=self.notes + mol.notes if self.notes and mol.notes else None
         )
+    
+    def charge_mult_is_valid(self) -> bool:
+        from ..operations import ChargeError, MultiplicityError
+        
+        if not isinstance(self.charge, int):
+            raise ChargeError("The charge must be an integer.")
+        
+        if not isinstance(self.mult, int) or self.mult < 1:
+            raise MultiplicityError("The multiplicity must be a positive integer.")
+        
+        total_Z = sum(elements.symbol(s).number for s in self.symbols)
+        total_e = total_Z - self.charge
+        
+        return total_e % 2 != self.mult % 2
     
     def get_distance(self, label0: int, label1: int) -> float:
         from ..operations import get_distance

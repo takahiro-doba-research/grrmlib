@@ -4,6 +4,8 @@ import numpy as np
 from scipy.spatial import distance
 from scipy.spatial.transform import Rotation as R
 
+from ..core import Molecule, Molecules
+
 
 def with_labels_from(mol0, mol1):
     mol0_new = mol0.copy()
@@ -39,6 +41,30 @@ def with_footer_from(mol0, mol1):
     mol0_new = mol0.copy()
     mol0_new.footer = copy.copy(mol1.footer)
     return mol0_new
+
+
+def duplicate_by_charge_mult(
+    mol: Molecule,
+    charges: list[int] | int,
+    mults: list[int] | int
+) -> Molecules:
+    if isinstance(charges, int):
+        charges = [charges]
+    
+    if isinstance(mults, int):
+        mults = [mults]
+    
+    mols = Molecules()
+    
+    for charge in charges:
+        for mult in mults:
+            mol_new = mol.copy()
+            mol_new.charge = charge
+            mol_new.mult = mult
+            if mol_new.charge_mult_is_valid():
+                mols[(charge, mult)] = mol_new
+    
+    return mols
 
 
 def get_distance(atomcoords, index_a, index_b):

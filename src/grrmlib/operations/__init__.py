@@ -1,6 +1,8 @@
 from .exceptions import (
     FragmentNotFoundError,
     ManyFragmentsFoundError,
+    ChargeError,
+    MultiplicityError,
 )
 from .molecule import (
     with_labels_from,
@@ -9,6 +11,7 @@ from .molecule import (
     with_notes_from,
     with_header_from,
     with_footer_from,
+    duplicate_by_charge_mult,
     get_distance,
     get_dihedral_angle,
     overlay,
