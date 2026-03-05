@@ -1,7 +1,7 @@
 from ..core import Molecule, Molecules
 
 
-def duplicate_by_charge_mult(
+def expand_charge_mult(
     mol: Molecule,
     charges: list[int] | int,
     mults: list[int] | int

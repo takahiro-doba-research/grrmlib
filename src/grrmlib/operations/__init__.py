@@ -11,7 +11,7 @@ from .atomcoords import (
     rotate,
 )
 from .molecule import (
-    duplicate_by_charge_mult,
+    expand_charge_mult,
 )
 from .connectable import (
     read_connectivity,
