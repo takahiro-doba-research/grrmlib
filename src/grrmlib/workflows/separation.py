@@ -6,7 +6,10 @@ from ..readers import (
     read_eq_list,
 )
 from ..core import is_identical
-from ..operations import product_charge_mult
+from ..operations import (
+    separate,
+    product_charge_mult,
+)
 from ..writers import (
     GaussianInputWriter,
     ConnectableWriter,
@@ -36,7 +39,7 @@ class SeparationWorkflow:
         mults: int | list[int],
     ) -> None:
         eqs = read_eq_list(self.path_eq_list)
-        seqs = eqs.separate().flatten().reset_keys()
+        seqs = eqs.expand(lambda seq: separate(seq)).flatten().reset_keys()
         seqs = seqs.cluster(is_identical).flatten()
         seqs = seqs.expand(lambda seq: product_charge_mult(seq, charges, mults)).flatten()
         
