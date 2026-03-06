@@ -11,6 +11,7 @@ from .atomcoords import (
     rotate,
 )
 from .molecule import (
+    separate,
     product_charge_mult,
 )
 from .connectable import (

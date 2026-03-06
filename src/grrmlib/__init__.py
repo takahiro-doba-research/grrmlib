@@ -27,6 +27,7 @@ from .operations import (
     get_dihedral_angle,
     overlay,
     rotate,
+    separate,
     product_charge_mult,
     read_connectivity,
     step_to_angles,
