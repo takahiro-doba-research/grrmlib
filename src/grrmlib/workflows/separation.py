@@ -6,6 +6,7 @@ from ..readers import (
     read_eq_list,
 )
 from ..core import is_identical
+from ..operations import product_charge_mult
 from ..writers import (
     GaussianInputWriter,
     ConnectableWriter,
@@ -27,10 +28,17 @@ class SeparationWorkflow:
         self.path_gaussian_sp = Path(path_gaussian_sp)
         self.path_grrm_min = Path(path_grrm_min)
         
-    def write_gaussian_sp(self, nprocshared: int, mem: str) -> None:
+    def write_gaussian_sp(
+        self,
+        nprocshared: int,
+        mem: str,
+        charges: int | list[int],
+        mults: int | list[int],
+    ) -> None:
         eqs = read_eq_list(self.path_eq_list)
         seqs = eqs.separate().flatten().reset_keys()
-        gseqs = seqs.cluster(is_identical)
+        seqs = seqs.cluster(is_identical).flatten()
+        seqs = seqs.expand(lambda seq: product_charge_mult(seq, charges, mults)).flatten()
         
         mol_method = GaussianInputReader().read(self.path_gaussian_sp)
         writer = GaussianInputWriter(
@@ -39,11 +47,10 @@ class SeparationWorkflow:
             route=mol_method.route,
             title=mol_method.title,
         )
-        writer.write_grouped(
-            gseqs,
+        writer.write_mols(
+            seqs,
             self.folder,
-            "SG",
-            "SEQ",
+            ["SG", "SEQ", "charge", "mult"],
             "gaussian_sp.com"
         )
     
