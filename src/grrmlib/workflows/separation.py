@@ -39,7 +39,7 @@ class SeparationWorkflow:
         mults: int | list[int],
     ) -> None:
         eqs = read_eq_list(self.path_eq_list)
-        seqs = eqs.expand(lambda seq: separate(seq)).flatten().reset_keys()
+        seqs = eqs.expand(lambda eq: separate(eq)).flatten().reset_keys()
         seqs = seqs.cluster(is_identical).flatten()
         seqs = seqs.expand(lambda seq: product_charge_mult(seq, charges, mults)).flatten()
         
