@@ -54,3 +54,20 @@ class GroupedMolecules(UserDict[Hashable, "Molecules"]):
                 mols_new[group + name] = mol.copy()
         
         return mols_new
+    
+    def reset_keys(self) -> Self:
+        from .molecules import Molecules
+        
+        index = 0
+        gmols_new = self.__class__()
+        
+        for group, mols in self.items():
+            mols_new = Molecules()
+            
+            for mol in mols.values():
+                mols_new[index] = mol
+                index += 1
+            
+            gmols_new[group] = mols_new
+        
+        return gmols_new
