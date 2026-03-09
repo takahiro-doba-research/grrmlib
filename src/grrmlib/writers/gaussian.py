@@ -91,7 +91,7 @@ class GaussianInputWriter:
     def write(
         self,
         mol: Molecule,
-        path: str | Path = "gaussian_input.com",
+        path: str | Path = "gaussian.com",
         *,
         overwrite: bool = False
     ) -> Path:
@@ -110,7 +110,7 @@ class GaussianInputWriter:
         mols: Molecules,
         folder: str | Path,
         prefix: str | Iterable[str] = "name",
-        basename: str | Path = "gaussian_input.com",
+        basename: str | Path = "gaussian.com",
         *,
         overwrite: bool = False
     ) -> None:
@@ -137,7 +137,7 @@ class GaussianInputWriter:
         folder: str | Path,
         prefix_group: str | Path = "group",
         prefix_mol: str | Path = "molecule",
-        basename: str | Path = "gaussian_input.com",
+        basename: str | Path = "gaussian.com",
         *,
         overwrite: bool = False
     ) -> None:
@@ -158,7 +158,7 @@ class GaussianOutputWriter:
     def write_scan(
         self,
         mols: Molecules,
-        path: str | Path = "gaussian_scan.log",
+        path: str | Path = "gaussian.log",
         *,
         overwrite: bool = False
     ) -> Path:

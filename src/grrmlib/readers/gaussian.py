@@ -5,7 +5,7 @@ import cclib
 import numpy as np
 import periodictable
 
-from ..core import Molecule
+from ..core import Molecule, Molecules
 
 
 class GaussianInputReader:
@@ -109,6 +109,26 @@ class GaussianOutputReader:
             scfenergy=data.scfenergies[-1],
             success=data.metadata["success"],
         )
+
+    def read_mols(
+        self,
+        folder: str | Path,
+        basename: str = "gaussian.log"
+    ) -> Molecules:
+        paths = sorted(Path(folder).rglob(basename))
+        mols = Molecules()
+        
+        for path in paths:
+            key = tuple(int(p.split("=")[1]) for p in path.parts[1:-1])
+            try:
+                mol = self.read(path)
+                mols[key] = mol
+            except Exception as e:
+                mols[key] = Molecule()
+                print(key, e)
+        
+        return mols
+
 
 def read_gaussian_input(path):
     
