@@ -27,18 +27,20 @@ class Molecule:
     (https://cclib.github.io/data.html)
     """
     _allowed_extra = {
-        "nprocshared",
-        "mem",
-        "chk",
-        "route",
-        "title",
-        "scfenergy",
         "afirenergy",
-        "zpve",
+        "chk",
         "grads",
         "hessian",
+        "infile",
+        "mem",
         "nmeigen",
+        "nprocshared",
+        "options",
+        "route",
+        "scfenergy",
         "success",
+        "title",
+        "zpve",
     }
     
     def __init__(
