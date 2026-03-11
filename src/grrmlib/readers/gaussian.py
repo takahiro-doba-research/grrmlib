@@ -3,7 +3,7 @@ from pathlib import Path
 
 import cclib
 import numpy as np
-import periodictable
+from periodictable import elements
 
 from ..core import Molecule, Molecules
 
@@ -97,7 +97,7 @@ class GaussianOutputReader:
         parser = cclib.io.ccopen(path)
         data = parser.parse()
         
-        symbols = [periodictable.elements[n] for n in data.atomnos]
+        symbols = [str(elements[n]) for n in data.atomnos]
         labels = np.arange(1, len(symbols) + 1)
         
         return Molecule(

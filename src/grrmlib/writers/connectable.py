@@ -13,18 +13,18 @@ class ConnectableWriter:
         self.title = title
     
     def _build_route(self) -> list[str]:
-        return ["#\n"]
+        return ["#"]
     
     def _build_title(self) -> list[str]:
         if self.title is not None:
             return self.title
         else:
-            return ["None\n"]
+            return ["None"]
     
     def _build_charge_mult(self, mol: Molecule) -> list[str]:
         charge = mol.charge if mol.charge is not None else 0
         mult = mol.mult if mol.mult is not None else 1
-        return [f"{charge} {mult}\n"]
+        return [f"{charge} {mult}"]
     
     def _build_atomcoords(self, mol: Molecule) -> list[str]:
         lines = []
@@ -32,7 +32,7 @@ class ConnectableWriter:
         for s, (x, y, z), n in mol.iter_atoms(with_notes=True):
             lines.append(
                 f"{s:2s}  {x:17.12f} {y:17.12f} {z:17.12f}"
-                f" {' '.join(map(str, n))}\n"
+                f" {' '.join(map(str, n))}"
             )
         
         return lines
@@ -40,13 +40,13 @@ class ConnectableWriter:
     def build(self, mol: Molecule) -> str:
         lines = []
         lines += self._build_route()
-        lines.append("\n")
+        lines.append("")
         lines += self._build_title()
-        lines.append("\n")
+        lines.append("")
         lines += self._build_charge_mult(mol)
         lines += self._build_atomcoords(mol)
-        lines.append("\n")
-        return "".join(lines)
+        lines.append("")
+        return "\n".join(lines)
     
     def write(
         self,

@@ -37,6 +37,7 @@ from .operations import (
 from .writers import (
     GaussianInputWriter,
     GaussianOutputWriter,
+    GRRMInputWriter,
     ConnectableWriter,
     XYZWriter,
 )
