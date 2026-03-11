@@ -1,6 +1,7 @@
 from pathlib import Path
+from typing import Iterable
 
-from ..core import Molecule
+from ..core import Molecule, Molecules
 
 
 class GRRMInputWriter:
@@ -92,3 +93,29 @@ class GRRMInputWriter:
             f.write(text)
         
         return path
+    
+    def write_mols(
+        self,
+        mols: Molecules,
+        folder: str | Path,
+        prefix: str | Iterable[str] = "name",
+        basename: str | Path = "grrm.com",
+        *,
+        overwrite: bool = False
+    ) -> None:
+        folder = Path(folder)
+        basename = Path(basename)
+        
+        prefix_tuple = (prefix, ) if isinstance(prefix, str) else tuple(prefix)
+        
+        for name, mol in mols.items():
+            name_tuple = name if isinstance(name, tuple) else (name, )
+            
+            if len(prefix_tuple) != len(name_tuple):
+                raise ValueError("prefix and name must have the same length")
+            
+            folder_new = folder
+            for prefix, name in zip(prefix_tuple, name_tuple):
+                folder_new = folder_new / f"{prefix}={name}"
+            
+            self.write(mol, folder_new / basename, overwrite=overwrite)
