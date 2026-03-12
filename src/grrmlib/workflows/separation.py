@@ -102,7 +102,7 @@ class SeparationWorkflow:
         
         for folder in folders:
             mol = reader.read(folder / "gaussian_sp.com")
-            writer.write(mol, folder / "grrm_min.com", overwrite=True)
+            writer.write(mol, folder / "grrm_min.com")
     
     def list_grrm_min(self) -> None:
         paths = sorted(Path("separation").rglob("grrm_min.com"))
