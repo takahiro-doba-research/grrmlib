@@ -6,6 +6,7 @@ from ..readers import (
     GaussianInputReader,
     GaussianOutputReader,
     GRRMInputReader,
+    GRRMMINOutputReader,
     ConnectableReader,
     read_eq_list,
 )
@@ -108,3 +109,16 @@ class SeparationWorkflow:
         paths = sorted(Path("separation").rglob("grrm_min.com"))
         Path("grrm_min.txt").write_text("\n".join(str(p) for p in paths))
         print(f"{len(paths)} grrm_min jobs listed.")
+    
+    def analyze_grrm_min(self) -> None:
+        reader = GRRMMINOutputReader()
+        seqs = reader.read_mols("separation", "grrm_min.log")
+        df = pl.DataFrame(
+            [(*name, seq.scfenergy, seq.status) for name, seq in seqs.items()],
+            schema=["SG", "SEQ", "charge", "mult", "scfenergy", "status"],
+            orient="row"
+        )
+        df.write_csv("grrm_min.csv")
+        
+        df_error = df.filter(pl.col("status") != "Minimum point was found")
+        print(f"{df_error.height} grrm_min jobs failed.")

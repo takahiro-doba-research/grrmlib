@@ -3,10 +3,29 @@ from pathlib import Path
 
 import numpy as np
 
-from ..core import Molecule, Trajectory
+from ..core import Molecule, Molecules, Trajectory
 
 
 class GRRMMINOutputReader:
+    
+    def read_mols(
+        self,
+        folder: str | Path,
+        basename: str = "grrm.log"
+    ) -> Molecules:
+        paths = sorted(Path(folder).rglob(basename))
+        mols = Molecules()
+        
+        for path in paths:
+            key = tuple(int(p.split("=")[1]) for p in path.parts[1:-1])
+            try:
+                _, opt, _ = self.read(path)
+                mols[key] = opt
+            except Exception as e:
+                mols[key] = Molecule()
+                print(key, e)
+        
+        return mols
     
     def read(self, path: str | Path) -> tuple[Trajectory, Molecule | None, Molecule | None]:
         path = Path(path)
