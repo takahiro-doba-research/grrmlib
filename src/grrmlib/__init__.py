@@ -36,6 +36,7 @@ from .operations import (
     step_to_angles,
     reset_connectable_notes,
     connect,
+    connect_all_iter,
 )
 from .writers import (
     GaussianInputWriter,
@@ -51,9 +52,7 @@ from .schedulers import (
 )
 from .workflows import (
     SeparationWorkflow,
-    connection_factory,
-    build_connection_folder,
-    connect_all_and_write_as_gaussian_input,
+    ConnectionWorkflow,
 )
 
 __version__ = "0.1.1"

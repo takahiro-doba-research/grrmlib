@@ -1,8 +1,10 @@
+from typing import Iterator
+
 import numpy as np
 
 from .atomcoords import overlay, rotate
 from .exceptions import FragmentNotFoundError, ManyFragmentsFoundError
-from ..core import Molecules, GroupedMolecules
+from ..core import Molecule, Molecules, GroupedMolecules
 
 
 def read_connectivity(mol):
@@ -42,42 +44,21 @@ def read_connectivity(mol):
     return connectivity
 
 
-def step_to_angles(mols):
-    grouped_arenes = GroupedMolecules()
-    
-    for name, mol in mols.items():
-        connectivity = read_connectivity(mol)
-        
-        for fragment, data in connectivity.items():
-            if "angle" in data:
-                mols_new = Molecules()
-                step = data["angle"]
-                angles = [360 * i / step for i in range(step)]
-                
-                for angle in angles:
-                    mol.notes = [[*n[:3], angle] if len(n) == 4 else n for n in mol.notes]
-                    mols_new[angle] = mol
-        
-        grouped_arenes[name] = mols_new
-    
-    return grouped_arenes
-
-
 def step_to_angles(mol):
-    mols_new = Molecules()
+    mols = Molecules()
     connectivity = read_connectivity(mol)
     
     for fragment, data in connectivity.items():
         if "angle" in data:
-            mols_new = Molecules()
             step = data["angle"]
             angles = [360 * i / step for i in range(step)]
             
             for angle in angles:
-                mol.notes = [[*n[:3], angle] if len(n) == 4 else n for n in mol.notes]
-                mols_new[angle] = mol
+                mol_copy = mol.copy()
+                mol_copy.notes = [[*n[:3], angle] if len(n) == 4 else n for n in mol.notes]
+                mols[angle] = mol_copy
     
-    return mols_new
+    return mols
 
 
 def reset_connectable_notes(mol, offset=0):
@@ -133,3 +114,54 @@ def connect(mol0, mol1):
     mol0 = reset_connectable_notes(mol0)
     mol1 = reset_connectable_notes(mol1, offset=max(mol0.labels))
     return mol0.join(mol1)
+
+
+def connect_all_iter(
+    seqs: Molecules,
+    subs_list: list[Molecules]
+) -> Iterator[tuple[tuple, Molecule]]:
+    """
+    Example
+    -------
+    seqs = Molecules({0: Molecule(), 1: Molecule(), ...})
+    subs_list = [
+        Molecules({(0, 0.0): Molecule(), (0, 180.0): Molecule(), ...}),
+        Molecules({(0, 0.0): Molecule(), (1, 0.0): Molecule(), ...}),
+        Molecules({(0, 0.0): Molecule(), (1, 0.0): Molecule(), ...}),
+        ...
+    ]
+    keys indicate (substituent number, angle)
+    """
+    
+    def connect_recursive(names, seq, subs_list):
+        if not subs_list:
+            yield names, seq
+            return
+        
+        connected = False
+        
+        for name, sub in subs_list[0].items():
+            try:
+                mol_new = connect(seq, sub)
+                connected = True
+                yield from connect_recursive(
+                    names + name,
+                    mol_new,
+                    subs_list[1:]
+                )
+            except FragmentNotFoundError:
+                continue  # or break
+        
+        if not connected:
+            yield from connect_recursive(
+                names + (None, None),
+                seq,
+                subs_list[1:]
+            )
+    
+    for name, seq in seqs.items():
+        yield from connect_recursive(
+            (name, ),
+            seq,
+            subs_list
+        )

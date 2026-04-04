@@ -1,61 +1,49 @@
 from pathlib import Path
 
+from ..core import Molecules
 from ..operations import FragmentNotFoundError, connect
 from ..writers import GaussianInputWriter
 
 
-def connection_factory(mols_tuple, gmols_tuples):
-    """
-    Example
-    -------
-    mols_tuple = ("SEQ", Molecules({0: Molecule(), 1: Molecule(), ...}))
-    gmols_tuples = [
-        ("arene", GroupedMolecules({0: Molecules(), 1: Molecules(), ...}),
-        ("alkene", GroupedMolecules({0: Molecules(), 1: Molecules(), ...})),
-        ("pg", GroupedMolecules({0: Molecules(), 1: Molecules(), ...})),
-        ("backbone", GroupedMolecules({0: Molecules(), 1: Molecules(), ...})),
-        ("pyridone", GroupedMolecules({0: Molecules(), 1: Molecules(), ...})),
-    ]
-    """
+class ConnectionWorkflow:
     
-    def connect_recursive(mol, gmols_tuples, names):
-        if not gmols_tuples:
-            yield mol, names
-            return
-        
-        key, gmols = gmols_tuples[0]
-        connected = False
-        
-        for name, mols in gmols.items():
-            for angle, mol_next in mols.items():
-                try:
-                    mol_new = connect(mol, mol_next)
-                    connected = True
-                    yield from connect_recursive(
-                        mol_new,
-                        gmols_tuples[1:],
-                        names + [(key, name), ("angle", angle)]
-                    )
-                except FragmentNotFoundError:
-                    break
-            if not connected:
-                break
-        
-        if not connected:
-            yield from connect_recursive(
-                mol,
-                gmols_tuples[1:],
-                names
-            )
+    def __init__(
+        self,
+        *,
+        folder_seq: str,
+        folders_sub: list[str],
+        path_gaussian_sp: str | Path,
+        path_grrm_min: str | Path,
+    ) -> None:
+        self.folder_seq = folder_seq
+        self.folders_sub = folders_sub
+        self.path_gaussian_sp = Path(path_gaussian_sp)
+        self.path_grrm_min = Path(path_grrm_min)
     
-    names = []
-    key, mols = mols_tuple
-    
-    for name, mol in mols.items():
-        yield from connect_recursive(
-            mol,
-            gmols_tuples,
-            names + [(key, name)]
+    def write_gaussian_sp(
+        self,
+        charges: int | list[int],
+        mults: int | list[int],
+    ) -> None:
+        paths_seq = sorted(Path(self.folder_seq).rglob("*.com"))
+        paths_sub_list = [sorted(Path(f).rglob("*.com")) for f in self.folders_sub]
+        
+        reader = ConnectableReader()
+        seqs = reader.read_mols(paths_seq)
+        subs_list = [reader.read_mols(p) for p in paths_sub_list]
+        
+        mol_method = GaussianInputReader().read(self.path_gaussian_sp)
+        writer = GaussianInputWriter(
+            nprocshared=mol_method.nprocshared,
+            mem=mol_method.mem,
+            route=mol_method.route,
+            title=mol_method.title,
+        )
+        writer.write_mols(
+            seqs,
+            "separation",
+            ["SG", "SEQ", "charge", "mult"],
+            "gaussian_sp.com"
         )
 
 

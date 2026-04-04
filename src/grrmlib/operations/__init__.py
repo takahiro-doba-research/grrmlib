@@ -19,4 +19,5 @@ from .connectable import (
     step_to_angles,
     reset_connectable_notes,
     connect,
+    connect_all_iter,
 )
