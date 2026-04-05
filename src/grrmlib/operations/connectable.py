@@ -165,3 +165,47 @@ def connect_all_iter(
             seq,
             subs_list
         )
+
+
+def build_connection_folder(folder, names):
+    """
+    Example
+    -------
+    names = [
+        ('SEQ', 7286),
+        ('arene', 0), ('angle', 0.0),
+        ('alkene', 0), ('angle', 240.0),
+        ('pg', 0), ('angle', 0.0),
+        ('backbone', 5), ('angle', 240.0),
+        ('pyridone', 9), ('angle', 0.0)
+    ]
+    """
+    folder_new = Path(folder)
+    
+    for key, value in names:
+        value = round(value) if key == "angle" else value
+        folder_new /= f"{key}{value}"
+    
+    return folder_new
+
+
+def connect_all_and_write_as_gaussian_input(
+    mols_tuple,
+    gmols_tuples,
+    mol_method,
+    folder="connection",
+    basename="gaussian_input.com"
+):
+    writer = GaussianInputWriter(
+        header=mol_method.header,
+        footer=mol_method.footer,
+    )
+    
+    for mol, names in connection_factory(mols_tuple, gmols_tuples):
+        folder_new = build_connection_folder(folder, names)
+        folder_new.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            writer.write(mol, folder_new / basename)
+        except FileExistsError as e:
+            print(e)

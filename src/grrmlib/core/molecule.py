@@ -169,6 +169,9 @@ class Molecule:
         self.validate()
         mol.validate()
         return self.__class__(
+            name=self.name,
+            charge=self.charge,
+            mult=self.mult,
             labels=np.concatenate([self.labels, mol.labels]),
             symbols=self.symbols + mol.symbols,
             atomcoords=np.vstack([self.atomcoords, mol.atomcoords]),

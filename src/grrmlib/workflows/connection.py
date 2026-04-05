@@ -1,7 +1,11 @@
 from pathlib import Path
 
+import numpy as np
+import polars as pl
+
 from ..core import Molecules
-from ..operations import FragmentNotFoundError, connect
+from ..operations import step_to_angles, connect_all_iter
+from ..readers import GaussianInputReader, ConnectableReader
 from ..writers import GaussianInputWriter
 
 
@@ -20,18 +24,36 @@ class ConnectionWorkflow:
         self.path_gaussian_sp = Path(path_gaussian_sp)
         self.path_grrm_min = Path(path_grrm_min)
     
-    def write_gaussian_sp(
-        self,
-        charges: int | list[int],
-        mults: int | list[int],
-    ) -> None:
-        paths_seq = sorted(Path(self.folder_seq).rglob("*.com"))
-        paths_sub_list = [sorted(Path(f).rglob("*.com")) for f in self.folders_sub]
-        
+    def write_gaussian_sp(self, old=False) -> None:
         reader = ConnectableReader()
-        seqs = reader.read_mols(paths_seq)
-        subs_list = [reader.read_mols(p) for p in paths_sub_list]
+        paths_seq = sorted(Path(self.folder_seq).glob("*.com"))
+        seqs = Molecules({int(p.stem): reader.read(p) for p in paths_seq})
         
+        if old:
+            df_labels = pl.read_csv("separated_group_info.csv")
+            df_labels = df_labels.with_columns(
+                pl.col("labels")
+                .str.split("_")
+                .list.eval(pl.element().cast(pl.Int64))
+            )
+            df_sgroup = pl.read_csv("separated_group.csv")
+            
+            for name, seq in seqs.items():
+                sgroup = df_sgroup.filter(pl.col("separated_EQ") == name)["separated_group"][0]
+                labels = df_labels.filter(pl.col("separated_group") == sgroup)["labels"].to_list()[0]
+                seq.labels = np.array(labels)
+        
+        paths_sub_list = [sorted(Path(f).glob("*.com")) for f in self.folders_sub]
+        subs_list = [
+            Molecules({int(p.stem): reader.read(p) for p in paths_sub})
+            for paths_sub in paths_sub_list
+        ]
+        subs_list = [
+            subs.expand(step_to_angles).flatten()
+            for subs in subs_list
+        ]
+        
+        mols = Molecules({names: seq for names, seq in connect_all_iter(seqs, subs_list)})
         mol_method = GaussianInputReader().read(self.path_gaussian_sp)
         writer = GaussianInputWriter(
             nprocshared=mol_method.nprocshared,
@@ -40,52 +62,8 @@ class ConnectionWorkflow:
             title=mol_method.title,
         )
         writer.write_mols(
-            seqs,
-            "separation",
-            ["SG", "SEQ", "charge", "mult"],
+            mols,
+            "connection",
+            [self.folder_seq] + [y for x in self.folders_sub for y in [x, "angle"]],
             "gaussian_sp.com"
         )
-
-
-def build_connection_folder(folder, names):
-    """
-    Example
-    -------
-    names = [
-        ('SEQ', 7286),
-        ('arene', 0), ('angle', 0.0),
-        ('alkene', 0), ('angle', 240.0),
-        ('pg', 0), ('angle', 0.0),
-        ('backbone', 5), ('angle', 240.0),
-        ('pyridone', 9), ('angle', 0.0)
-    ]
-    """
-    folder_new = Path(folder)
-    
-    for key, value in names:
-        value = round(value) if key == "angle" else value
-        folder_new /= f"{key}{value}"
-    
-    return folder_new
-
-
-def connect_all_and_write_as_gaussian_input(
-    mols_tuple,
-    gmols_tuples,
-    mol_method,
-    folder="connection",
-    basename="gaussian_input.com"
-):
-    writer = GaussianInputWriter(
-        header=mol_method.header,
-        footer=mol_method.footer,
-    )
-    
-    for mol, names in connection_factory(mols_tuple, gmols_tuples):
-        folder_new = build_connection_folder(folder, names)
-        folder_new.mkdir(parents=True, exist_ok=True)
-        
-        try:
-            writer.write(mol, folder_new / basename)
-        except FileExistsError as e:
-            print(e)
