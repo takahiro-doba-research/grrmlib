@@ -13,7 +13,7 @@ class GaussianInputReader:
     def read(self, path: str | Path) -> Molecule:
         path = Path(path)
         text = path.read_text()
-        lines = text.splitlines(keepends=True)
+        lines = text.splitlines()
         return self.parse(lines)
     
     def _parse_link0(
