@@ -53,7 +53,11 @@ class ConnectionWorkflow:
             for subs in subs_list
         ]
         
-        mols = Molecules({names: seq for names, seq in connect_all_iter(seqs, subs_list)})
+        mols = Molecules({
+            tuple(int(n) if n is not None else n for n in names): seq
+            for names, seq in connect_all_iter(seqs, subs_list)
+        })
+        
         mol_method = GaussianInputReader().read(self.path_gaussian_sp)
         writer = GaussianInputWriter(
             nprocshared=mol_method.nprocshared,
@@ -67,3 +71,22 @@ class ConnectionWorkflow:
             [self.folder_seq] + [y for x in self.folders_sub for y in [x, "angle"]],
             "gaussian_sp.com"
         )
+    
+    def list_gaussian_sp(self) -> None:
+        paths = sorted(Path("connection").rglob("gaussian_sp.com"))
+        Path("gaussian_sp.txt").write_text("\n".join(str(p) for p in paths))
+        print(f"{len(paths)} gaussian_sp jobs listed.")
+    
+    def analyze_gaussian_sp(self) -> None:
+        pass
+    
+    def write_grrm_min(self) -> None:
+        pass
+    
+    def list_grrm_min(self) -> None:
+        paths = sorted(Path("connection").rglob("grrm_min.com"))
+        Path("grrm_min.txt").write_text("\n".join(str(p) for p in paths))
+        print(f"{len(paths)} grrm_min jobs listed.")
+    
+    def analyze_grrm_min(self) -> None:
+        pass
