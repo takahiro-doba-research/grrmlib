@@ -44,6 +44,7 @@ from .writers import (
     GRRMInputWriter,
     ConnectableWriter,
     XYZWriter,
+    PolarsExporter,
 )
 from .jobs import GaussianJob
 from .schedulers import (

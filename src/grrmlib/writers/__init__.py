@@ -5,3 +5,4 @@ from .gaussian import (
 from .grrm import GRRMInputWriter
 from .connectable import ConnectableWriter
 from .xyz import XYZWriter
+from .polars_dataframe import PolarsExporter

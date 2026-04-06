@@ -10,6 +10,24 @@ from ..core import Molecule, Molecules
 
 class GaussianInputReader:
     
+    def read_mols(
+        self,
+        folder: str | Path,
+        basename: str = "gaussian.com"
+    ) -> Molecules:
+        paths = sorted(Path(folder).rglob(basename))
+        mols = Molecules()
+        
+        for path in paths:
+            key = tuple(int(p.split("=")[1]) for p in path.parts[1:-1])
+            try:
+                mols[key] = self.read(path)
+            except Exception as e:
+                mols[key] = Molecule()
+                print(key, e)
+        
+        return mols
+    
     def read(self, path: str | Path) -> Molecule:
         path = Path(path)
         text = path.read_text()

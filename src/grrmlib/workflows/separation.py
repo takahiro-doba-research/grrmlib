@@ -10,7 +10,7 @@ from ..readers import (
     ConnectableReader,
     read_eq_list,
 )
-from ..core import is_identical
+from ..core import Molecules, is_identical
 from ..operations import (
     separate,
     product_charge_mult,
@@ -19,6 +19,7 @@ from ..writers import (
     GaussianInputWriter,
     GRRMInputWriter,
     ConnectableWriter,
+    PolarsExporter,
 )
 
 
@@ -39,13 +40,16 @@ class SeparationWorkflow:
         self,
         charges: int | list[int],
         mults: int | list[int],
+        *,
+        overwrite: bool = False
     ) -> None:
         eqs = read_eq_list(self.path_eq_list)
         seqs = eqs.expand(lambda eq: separate(eq)).flatten().reset_keys()
         seqs = seqs.cluster(is_identical).flatten()
         seqs = seqs.expand(lambda seq: product_charge_mult(seq, charges, mults)).flatten()
         
-        mol_method = GaussianInputReader().read(self.path_gaussian_sp)
+        reader = GaussianInputReader()
+        mol_method = reader.read(self.path_gaussian_sp)
         writer = GaussianInputWriter(
             nprocshared=mol_method.nprocshared,
             mem=mol_method.mem,
@@ -56,7 +60,8 @@ class SeparationWorkflow:
             seqs,
             "separation",
             ["SG", "SEQ", "charge", "mult"],
-            "gaussian_sp.com"
+            "gaussian_sp.com",
+            overwrite=overwrite
         )
     
     def list_gaussian_sp(self) -> None:
@@ -67,43 +72,46 @@ class SeparationWorkflow:
     def analyze_gaussian_sp(self) -> None:
         reader = GaussianOutputReader()
         seqs = reader.read_mols("separation", "gaussian_sp.log")
-        df = pl.DataFrame(
-            [(*name, seq.scfenergy, seq.success) for name, seq in seqs.items()],
-            schema=["SG", "SEQ", "charge", "mult", "scfenergy", "success"],
-            orient="row"
+        exporter = PolarsExporter()
+        df = exporter.export(
+            seqs,
+            ["SG", "SEQ", "charge", "mult"],
+            ["scfenergy", "success"]
         )
         df.write_csv("gaussian_sp.csv")
         
         df_error = df.filter(pl.col("success") == False)
         print(f"{df_error.height} gaussian_sp jobs failed.")
     
-    def write_grrm_min(self) -> None:
+    def write_grrm_min(self, *, overwrite: bool = False) -> None:
         df = (
             pl.read_csv("gaussian_sp.csv")
             .group_by(["SG", "charge", "mult"], maintain_order=True)
             .agg(pl.all().sort_by("scfenergy").first())
             .select(["SG", "SEQ", "charge", "mult", "scfenergy", "success"])
         )
-        df.write_csv("gaussian_sp_summary.csv")
+        df.write_csv("gaussian_sp_selected.csv")
         
-        paths = sorted(Path("separation").rglob("gaussian_sp.com"))
-        folders = [
-            path.parent
-            for path in paths
-            for parts in path.parts
-            if parts.split("=")[0] == "SEQ"
-            and int(parts.split("=")[1]) in df["SEQ"]
-        ]
         reader = GaussianInputReader()
-        mol_method = GRRMInputReader().read(self.path_grrm_min)
+        seqs = reader.read_mols("separation", "gaussian_sp.com")
+        seqs_selected = Molecules({
+            row: seqs[row]
+            for row in df.select(["SG", "SEQ", "charge", "mult"]).iter_rows()
+        })
+        
+        reader = GRRMInputReader()
+        mol_method = reader.read(self.path_grrm_min)
         writer = GRRMInputWriter(
             route=mol_method.route,
             options=mol_method.options
         )
-        
-        for folder in folders:
-            mol = reader.read(folder / "gaussian_sp.com")
-            writer.write(mol, folder / "grrm_min.com")
+        writer.write_mols(
+            seqs_selected,
+            "separation",
+            ["SG", "SEQ", "charge", "mult"],
+            "grrm_min.com",
+            overwrite=overwrite
+        )
     
     def list_grrm_min(self) -> None:
         paths = sorted(Path("separation").rglob("grrm_min.com"))
@@ -113,16 +121,11 @@ class SeparationWorkflow:
     def analyze_grrm_min(self) -> None:
         reader = GRRMMINOutputReader()
         seqs = reader.read_mols("separation", "grrm_min.log")
-        rows = []
-        for name, seq in seqs.items():
-            if seq.status == "Minimum point was found":
-                rows.append([*name, seq.scfenergy, seq.status])
-            else:
-                rows.append([*name, None, seq.status])
-        df = pl.DataFrame(
-            rows,
-            schema=["SG", "SEQ", "charge", "mult", "scfenergy", "status"],
-            orient="row"
+        exporter = PolarsExporter()
+        df = exporter.export(
+            seqs,
+            ["SG", "SEQ", "charge", "mult"],
+            ["scfenergy", "status"]
         )
         df.write_csv("grrm_min.csv")
         
