@@ -27,13 +27,13 @@ class GRRMMINOutputReader:
         
         return mols
     
-    def read(self, path: str | Path) -> tuple[Trajectory, Molecule | None, Molecule | None]:
+    def read(self, path: str | Path) -> tuple[Trajectory, Molecule, Molecule | None]:
         path = Path(path)
         text = path.read_text()
         lines = text.splitlines()
         return self.parse(lines)
     
-    def parse(self, lines: list[str]) -> tuple[Trajectory, Molecule | None, Molecule | None]:
+    def parse(self, lines: list[str]) -> tuple[Trajectory, Molecule, Molecule | None]:
         indices_optopt = [i for i, l in enumerate(lines) if l.startswith("OPTOPT")]
         lines_optopt = lines[indices_optopt[0] + 1: indices_optopt[1]]
         itrs, opt = self._parse_optopt(lines_optopt)
@@ -47,7 +47,7 @@ class GRRMMINOutputReader:
         
         return itrs, opt, freq
     
-    def _parse_optopt(self, lines: list[str]) -> tuple[Trajectory, Molecule | None]:
+    def _parse_optopt(self, lines: list[str]) -> tuple[Trajectory, Molecule]:
         indices_eqeq = [i for i, l in enumerate(lines) if l.startswith("======")]
         
         if indices_eqeq:
@@ -57,12 +57,16 @@ class GRRMMINOutputReader:
             
             lines_opt = lines[index_eqeq + 1:]
             opt = self._parse_opt(lines_opt)
-            return itrs, opt
+            opt.status = lines[-1].strip()
         
         else:
             lines_itrs = lines[0:-1]
             itrs = self._parse_itrs(lines_itrs)
-            return itrs, None
+            
+            opt = Molecule()
+            opt.status = lines[-1].strip()
+        
+        return itrs, opt
     
     def _parse_itrs(self, lines: list[str]) -> Trajectory:
         indices_itr = [i for i, l in enumerate(lines) if l.startswith("#")]
@@ -116,7 +120,6 @@ class GRRMMINOutputReader:
         
         lines_nmeigen = lines[index_nmeigen + 1:-2]
         nmeigen = np.concatenate([list(map(float, l.split())) for l in lines_nmeigen])
-        status = lines[-1].strip()
         
         return Molecule(
             mult=mult,
@@ -128,7 +131,6 @@ class GRRMMINOutputReader:
             grads=grads,
             hessian=hessian,
             nmeigen=nmeigen,
-            status=status,
         )
     
     def _parse_hessian(self, lines: list[str]) -> np.ndarray:

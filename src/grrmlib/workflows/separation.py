@@ -113,8 +113,14 @@ class SeparationWorkflow:
     def analyze_grrm_min(self) -> None:
         reader = GRRMMINOutputReader()
         seqs = reader.read_mols("separation", "grrm_min.log")
+        rows = []
+        for name, seq in seqs.items():
+            if seq.status == "Minimum point was found":
+                rows.append([*name, seq.scfenergy, seq.status])
+            else:
+                rows.append([*name, None, seq.status])
         df = pl.DataFrame(
-            [(*name, seq.scfenergy, seq.status) for name, seq in seqs.items()],
+            rows,
             schema=["SG", "SEQ", "charge", "mult", "scfenergy", "status"],
             orient="row"
         )
