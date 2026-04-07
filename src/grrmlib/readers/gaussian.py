@@ -20,7 +20,7 @@ class GaussianInputReader:
         
         for path in paths:
             key = tuple(p.split("=")[1] for p in path.parts[1:-1])
-            key = tuple(int(k) if k != "None" else k for k in key)
+            key = tuple(None if k == "None" else int(k) for k in key)
             try:
                 mols[key] = self.read(path)
             except Exception as e:
@@ -128,7 +128,7 @@ class GaussianOutputReader:
             scfenergy=data.scfenergies[-1],
             success=data.metadata["success"],
         )
-
+    
     def read_mols(
         self,
         folder: str | Path,
@@ -139,7 +139,7 @@ class GaussianOutputReader:
         
         for path in paths:
             key = tuple(p.split("=")[1] for p in path.parts[1:-1])
-            key = tuple(int(k) if k != "None" else k for k in key)
+            key = tuple(None if k == "None" else int(k) for k in key)
             try:
                 mol = self.read(path)
                 mols[key] = mol
