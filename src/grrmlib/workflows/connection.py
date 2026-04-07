@@ -8,10 +8,13 @@ from ..operations import step_to_angles, connect_all_iter
 from ..readers import (
     GaussianInputReader,
     GaussianOutputReader,
+    GRRMInputReader,
+    GRRMMINOutputReader,
     ConnectableReader
 )
 from ..writers import (
     GaussianInputWriter,
+    GRRMInputWriter,
     PolarsExporter,
 )
 
@@ -31,10 +34,12 @@ class ConnectionWorkflow:
         self.path_gaussian_sp = Path(path_gaussian_sp)
         self.path_grrm_min = Path(path_grrm_min)
         
-        if not Path(self.folder_seq).is_dir():
-            raise FileNotFoundError(f"{self.folder_seq} not found.")
+        self.folders = [folder_seq] + [y for x in folders_sub for y in [x, f"{x}_angle"]]
         
-        for folder in self.folders_sub:
+        if not Path(folder_seq).is_dir():
+            raise FileNotFoundError(f"{folder_seq} not found.")
+        
+        for folder in folders_sub:
             if not Path(folder).is_dir():
                 raise FileNotFoundError(f"{folder} not found.")
     
@@ -43,6 +48,7 @@ class ConnectionWorkflow:
         paths_seq = sorted(Path(self.folder_seq).glob("*.com"))
         seqs = Molecules({int(p.stem): reader.read(p) for p in paths_seq})
         
+        # For the old system in which the notes of the separated_EQs were not relabeled.
         if old:
             df_labels = pl.read_csv("separated_group_info.csv")
             df_labels = df_labels.with_columns(
@@ -80,11 +86,10 @@ class ConnectionWorkflow:
             route=mol_method.route,
             title=mol_method.title,
         )
-        folder = [self.folder_seq] + [y for x in self.folders_sub for y in [x, "angle"]]
         writer.write_mols(
             mols,
             "connection",
-            folder,
+            self.folders,
             "gaussian_sp.com"
         )
     
@@ -97,10 +102,9 @@ class ConnectionWorkflow:
         reader = GaussianOutputReader()
         seqs = reader.read_mols("connection", "gaussian_sp.log")
         exporter = PolarsExporter()
-        folder = [self.folder_seq] + [y for x in self.folders_sub for y in [x, f"{x}_angle"]]
         df = exporter.export(
             seqs,
-            folder,
+            self.folders,
             ["scfenergy", "success"]
         )
         df.write_csv("gaussian_sp.csv")
@@ -108,8 +112,34 @@ class ConnectionWorkflow:
         df_error = df.filter(pl.col("success") == False)
         print(f"{df_error.height} gaussian_sp jobs failed.")
     
-    def write_grrm_min(self) -> None:
-        pass
+    def write_grrm_min(self, *, overwrite: bool = False) -> None:
+        df = (
+            pl.read_csv("gaussian_sp.csv")
+            .group_by([self.folder_seq] + self.folders_sub, maintain_order=True)
+            .agg(pl.all().sort_by("scfenergy", nulls_last=True, maintain_order=True).first())
+        )
+        df.write_csv("gaussian_sp_selected.csv")
+        
+        reader = GaussianInputReader()
+        mols = reader.read_mols("connection", "gaussian_sp.com")
+        mols_selected = Molecules({
+            row: mols[row]
+            for row in df.select(self.folders).iter_rows()
+        })
+        
+        reader = GRRMInputReader()
+        mol_method = reader.read(self.path_grrm_min)
+        writer = GRRMInputWriter(
+            route=mol_method.route,
+            options=mol_method.options
+        )
+        writer.write_mols(
+            mols_selected,
+            "separation",
+            self.folders,
+            "grrm_min.com",
+            overwrite=overwrite
+        )
     
     def list_grrm_min(self) -> None:
         paths = sorted(Path("connection").rglob("grrm_min.com"))
