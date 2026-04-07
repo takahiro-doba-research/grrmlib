@@ -115,19 +115,23 @@ class GaussianOutputReader:
         path = Path(path)
         parser = cclib.io.ccopen(path)
         data = parser.parse()
+        success = data.metadata["success"]
         
-        symbols = [str(elements[n]) for n in data.atomnos]
-        labels = np.arange(1, len(symbols) + 1)
-        
-        return Molecule(
-            charge=data.charge,
-            mult=data.mult,
-            labels=labels,
-            symbols=symbols,
-            atomcoords=data.atomcoords[-1],
-            scfenergy=data.scfenergies[-1],
-            success=data.metadata["success"],
-        )
+        if success:
+            symbols = [str(elements[n]) for n in data.atomnos]
+            labels = np.arange(1, len(symbols) + 1)
+            return Molecule(
+                charge=data.charge,
+                mult=data.mult,
+                labels=labels,
+                symbols=symbols,
+                atomcoords=data.atomcoords[-1],
+                scfenergy=data.scfenergies[-1],
+                success=success,
+            )
+            
+        else:
+            return Molecule(success=success)
     
     def read_mols(
         self,
