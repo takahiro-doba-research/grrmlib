@@ -5,8 +5,15 @@ import polars as pl
 
 from ..core import Molecules
 from ..operations import step_to_angles, connect_all_iter
-from ..readers import GaussianInputReader, ConnectableReader
-from ..writers import GaussianInputWriter
+from ..readers import (
+    GaussianInputReader,
+    GaussianOutputReader,
+    ConnectableReader
+)
+from ..writers import (
+    GaussianInputWriter,
+    PolarsExporter,
+)
 
 
 class ConnectionWorkflow:
@@ -58,17 +65,19 @@ class ConnectionWorkflow:
             for names, seq in connect_all_iter(seqs, subs_list)
         })
         
-        mol_method = GaussianInputReader().read(self.path_gaussian_sp)
+        reader = GaussianInputReader()
+        mol_method = reader.read(self.path_gaussian_sp)
         writer = GaussianInputWriter(
             nprocshared=mol_method.nprocshared,
             mem=mol_method.mem,
             route=mol_method.route,
             title=mol_method.title,
         )
+        folder = [self.folder_seq] + [y for x in self.folders_sub for y in [x, "angle"]]
         writer.write_mols(
             mols,
             "connection",
-            [self.folder_seq] + [y for x in self.folders_sub for y in [x, "angle"]],
+            folder,
             "gaussian_sp.com"
         )
     
@@ -78,7 +87,19 @@ class ConnectionWorkflow:
         print(f"{len(paths)} gaussian_sp jobs listed.")
     
     def analyze_gaussian_sp(self) -> None:
-        pass
+        reader = GaussianOutputReader()
+        seqs = reader.read_mols("connection", "gaussian_sp.log")
+        exporter = PolarsExporter()
+        folder = [self.folder_seq] + [y for x in self.folders_sub for y in [x, f"{x}_angle"]]
+        df = exporter.export(
+            seqs,
+            folder,
+            ["scfenergy", "success"]
+        )
+        df.write_csv("gaussian_sp.csv")
+        
+        df_error = df.filter(pl.col("success") == False)
+        print(f"{df_error.height} gaussian_sp jobs failed.")
     
     def write_grrm_min(self) -> None:
         pass

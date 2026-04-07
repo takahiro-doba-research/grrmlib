@@ -19,7 +19,8 @@ class GaussianInputReader:
         mols = Molecules()
         
         for path in paths:
-            key = tuple(int(p.split("=")[1]) for p in path.parts[1:-1])
+            key = tuple(p.split("=")[1] for p in path.parts[1:-1])
+            key = tuple(int(k) if k != "None" else k for k in key)
             try:
                 mols[key] = self.read(path)
             except Exception as e:
@@ -137,7 +138,8 @@ class GaussianOutputReader:
         mols = Molecules()
         
         for path in paths:
-            key = tuple(int(p.split("=")[1]) for p in path.parts[1:-1])
+            key = tuple(p.split("=")[1] for p in path.parts[1:-1])
+            key = tuple(int(k) if k != "None" else k for k in key)
             try:
                 mol = self.read(path)
                 mols[key] = mol
