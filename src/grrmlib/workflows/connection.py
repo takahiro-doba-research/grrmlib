@@ -30,6 +30,13 @@ class ConnectionWorkflow:
         self.folders_sub = folders_sub
         self.path_gaussian_sp = Path(path_gaussian_sp)
         self.path_grrm_min = Path(path_grrm_min)
+        
+        if not Path(self.folder_seq).is_dir():
+            raise FileNotFoundError(f"{self.folder_seq} not found.")
+        
+        for folder in self.folders_sub:
+            if not Path(folder).is_dir():
+                raise FileNotFoundError(f"{folder} not found.")
     
     def write_gaussian_sp(self, old=False) -> None:
         reader = ConnectableReader()
