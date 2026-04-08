@@ -111,14 +111,19 @@ class ConnectionWorkflow:
         
         df_error = df.filter(pl.col("success") == False)
         print(f"{df_error.height} gaussian_sp jobs failed.")
-    
-    def write_grrm_min(self, *, overwrite: bool = False) -> None:
-        df = (
+        
+        df_selected = (
             pl.read_csv("gaussian_sp.csv")
             .group_by([self.folder_seq] + self.folders_sub, maintain_order=True)
             .agg(pl.all().sort_by("scfenergy", nulls_last=True, maintain_order=True).first())
         )
-        df.write_csv("gaussian_sp_selected.csv")
+        df_selected.write_csv("gaussian_sp_selected.csv")
+        
+        df_selected_error = df_selected.filter(pl.col("success") == False)
+        print(f"{df_selected_error.height} gaussian_sp selected jobs failed.")
+    
+    def write_grrm_min(self, *, overwrite: bool = False) -> None:
+        df = pl.read_csv("gaussian_sp_selected.csv")
         
         reader = GaussianInputReader()
         mols = reader.read_mols("connection", "gaussian_sp.com")
@@ -135,7 +140,7 @@ class ConnectionWorkflow:
         )
         writer.write_mols(
             mols_selected,
-            "separation",
+            "connection",
             self.folders,
             "grrm_min.com",
             overwrite=overwrite
@@ -147,4 +152,15 @@ class ConnectionWorkflow:
         print(f"{len(paths)} grrm_min jobs listed.")
     
     def analyze_grrm_min(self) -> None:
-        pass
+        reader = GRRMMINOutputReader()
+        mols = reader.read_mols("connection", "grrm_min.log")
+        exporter = PolarsExporter()
+        df = exporter.export(
+            mols,
+            self.folders,
+            ["scfenergy", "status"]
+        )
+        df.write_csv("grrm_min.csv")
+        
+        df_error = df.filter(pl.col("status") != "Minimum point was found")
+        print(f"{df_error.height} grrm_min jobs failed.")
