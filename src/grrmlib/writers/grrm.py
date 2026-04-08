@@ -75,6 +75,7 @@ class GRRMInputWriter:
         lines += self._build_charge_mult(mol)
         lines += self._build_atomcoords(mol)
         lines += self._build_options()
+        lines.append("")
         return "\n".join(lines)
     
     def write(
