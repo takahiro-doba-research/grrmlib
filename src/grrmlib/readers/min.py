@@ -17,7 +17,8 @@ class GRRMMINOutputReader:
         mols = Molecules()
         
         for path in paths:
-            key = tuple(int(p.split("=")[1]) for p in path.parts[1:-1])
+            key = tuple(p.split("=")[1] for p in path.parts[1:-1])
+            key = tuple(None if k == "None" else int(k) for k in key)
             try:
                 _, opt, _ = self.read(path)
                 mols[key] = opt
