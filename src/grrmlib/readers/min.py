@@ -8,6 +8,9 @@ from ..core import Molecule, Molecules, Trajectory
 
 class GRRMMINOutputReader:
     
+    def __init__(self, version: str = "GRRM23") -> None:
+        self.version = version
+    
     def read_mols(
         self,
         folder: str | Path,
@@ -42,7 +45,12 @@ class GRRMMINOutputReader:
         indices_freqfreq = [i for i, l in enumerate(lines) if l.startswith("FREQFREQ")]
         if indices_freqfreq:
             lines_freqfreq = lines[indices_freqfreq[0] + 1: indices_freqfreq[1]]
-            freq = self._parse_freqfreq(lines_freqfreq)
+            if self.version == "GRRM23":
+                freq = self._parse_freqfreq(lines_freqfreq)
+            elif self.version == "GRRMdev":
+                freq = self._parse_freqfreq_dev(lines_freqfreq)
+            else:
+                freq = self._parse_freqfreq(lines_freqfreq)
         else:
             freq = None
         
@@ -182,17 +190,17 @@ class GRRMMINOutputReader:
         index_thermo_repl = [i for i, l in enumerate(lines) if l.startswith("Thermochemistry (after")][0]
         lines_thermo_repl = lines[index_thermo_repl + 1: index_thermo_repl + 15]
         (
-            _,
+            scfenergy_repl,
             zpve_repl,
             scfzpvenergy_repl,
-            _,
-            _,
+            transenergy_repl,
+            rotenergy_repl,
             vibenergy_repl,
             enthalpy_correction_repl,
             enthalpy_repl,
-            _,
-            _,
-            _,
+            scfentropy_repl,
+            transentropy_repl,
+            rotentropy_repl,
             vibentropy_repl,
             freeenergy_correction_repl,
             freeenergy_repl,
@@ -217,11 +225,63 @@ class GRRMMINOutputReader:
             vibentropy=vibentropy,
             freeenergy_correction=freeenergy_correction,
             freeenergy=freeenergy,
+            scfenergy_repl=scfenergy_repl,
             zpve_repl=zpve_repl,
             scfzpvenergy_repl=scfzpvenergy_repl,
+            transenergy_repl=transenergy_repl,
+            rotenergy_repl=rotenergy_repl,
             vibenergy_repl=vibenergy_repl,
             enthalpy_correction_repl=enthalpy_correction_repl,
             enthalpy_repl=enthalpy_repl,
+            scfentropy_repl=scfentropy_repl,
+            transentropy_repl=transentropy_repl,
+            rotentropy_repl=rotentropy_repl,
+            vibentropy_repl=vibentropy_repl,
+            freeenergy_correction_repl=freeenergy_correction_repl,
+            freeenergy_repl=freeenergy_repl,
+        )
+    
+    def _parse_freqfreq_dev(self, lines: list[str]) -> Molecule:
+        indices_freq = [i for i, l in enumerate(lines) if l.startswith("Freq.")]
+        lines_atomcoords = lines[1:indices_freq[0] - 2]
+        labels, symbols, atomcoords = self._parse_atomcoords(lines_atomcoords)
+        vibfreqs = np.array([float(freq) for i in indices_freq for freq in lines[i].split()[2:5]])
+        
+        index_thermo_repl = [i for i, l in enumerate(lines) if l.startswith("Thermochemistry at")][0]
+        lines_thermo_repl = lines[index_thermo_repl + 1: index_thermo_repl + 15]
+        (
+            scfenergy_repl,
+            zpve_repl,
+            scfzpvenergy_repl,
+            transenergy_repl,
+            rotenergy_repl,
+            vibenergy_repl,
+            enthalpy_correction_repl,
+            enthalpy_repl,
+            scfentropy_repl,
+            transentropy_repl,
+            rotentropy_repl,
+            vibentropy_repl,
+            freeenergy_correction_repl,
+            freeenergy_repl,
+        ) = [float(re.search(r"=\s*(-?\d+\.?\d+)", l).group(1)) for l in lines_thermo_repl]
+        
+        return Molecule(
+            labels=labels,
+            symbols=symbols,
+            atomcoords=atomcoords,
+            vibfreqs=vibfreqs,
+            scfenergy_repl=scfenergy_repl,
+            zpve_repl=zpve_repl,
+            scfzpvenergy_repl=scfzpvenergy_repl,
+            transenergy_repl=transenergy_repl,
+            rotenergy_repl=rotenergy_repl,
+            vibenergy_repl=vibenergy_repl,
+            enthalpy_correction_repl=enthalpy_correction_repl,
+            enthalpy_repl=enthalpy_repl,
+            scfentropy_repl=scfentropy_repl,
+            transentropy_repl=transentropy_repl,
+            rotentropy_repl=rotentropy_repl,
             vibentropy_repl=vibentropy_repl,
             freeenergy_correction_repl=freeenergy_correction_repl,
             freeenergy_repl=freeenergy_repl,
