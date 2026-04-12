@@ -151,8 +151,8 @@ class ConnectionWorkflow:
         Path("grrm_min.txt").write_text("\n".join(str(p) for p in paths))
         print(f"{len(paths)} grrm_min jobs listed.")
     
-    def analyze_grrm_min(self) -> None:
-        reader = GRRMMINOutputReader()
+    def analyze_grrm_min(self, version: str = "GRRM23") -> None:
+        reader = GRRMMINOutputReader(version=version)
         mols = reader.read_mols("connection", "grrm_min.log")
         exporter = PolarsExporter()
         df = exporter.export(
