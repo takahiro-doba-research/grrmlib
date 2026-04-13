@@ -3,12 +3,15 @@ import networkx as nx
 from ..core import Molecule, Molecules
 
 
-def separate(mol: Molecule) -> Molecules:
+def separate(mol: Molecule, old: bool = False) -> Molecules:
     mol.validate()
     A = mol.get_adj_matrix()
     G = nx.from_numpy_array(A)
-    #components = sorted(nx.connected_components(G), key=len, reverse=True)
-    components = sorted(nx.connected_components(G), key=min)
+    
+    if old:
+        components = sorted(nx.connected_components(G), key=len, reverse=True)
+    else:
+        components = sorted(nx.connected_components(G), key=min)
     
     mols = Molecules()
     for i, component in enumerate(components):
