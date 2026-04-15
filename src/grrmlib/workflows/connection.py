@@ -151,6 +151,28 @@ class ConnectionWorkflow:
         Path("grrm_min.txt").write_text("\n".join(str(p) for p in paths))
         print(f"{len(paths)} grrm_min jobs listed.")
     
+    def list_grrm_min_error(self) -> None:
+        paths = sorted(Path("connection").rglob("grrm_min_message_ERROR.rrm"))
+        paths_new = [str(p.with_name("grrm_min.com")) for p in paths]
+        Path("grrm_min_error.txt").write_text("\n".join(paths_new))
+        print(f"{len(paths_new)} grrm_min error jobs listed.")
+    
+    def list_grrm_min_unprocessed(self) -> None:
+        paths = sorted(Path("connection").rglob("grrm_min.com"))
+        paths_new = []
+        
+        for path in paths:
+            files = [f.name for f in path.parent.iterdir()]
+            
+            if (
+                "grrm_min_message_ERROR.rrm" not in files
+                and "grrm_min.log" not in files
+            ):
+                paths_new.append(str(path))
+        
+        Path("grrm_min_unprocessed.txt").write_text("\n".join(paths_new))
+        print(f"{len(paths_new)} grrm_min unprocessed jobs listed.")
+    
     def analyze_grrm_min(self, version: str = "GRRM23") -> None:
         reader = GRRMMINOutputReader(version=version)
         mols = reader.read_mols("connection", "grrm_min.log")
