@@ -157,6 +157,17 @@ class ConnectionWorkflow:
         Path("grrm_min_error.txt").write_text("\n".join(paths_new))
         print(f"{len(paths_new)} grrm_min error jobs listed.")
     
+    def write_grrm_min_continue(self) -> None:
+        paths = sorted(Path("connection").rglob("grrm_min_message_ERROR.rrm"))
+        count = 0
+        
+        for path in paths:
+            path_new = path.with_name("grrm_min_message_CONTINUE.rrm")
+            path_new.touch()
+            count += 1
+        
+        print(f"{count} grrm_min_message_CONTINUE.rrm files created")
+    
     def list_grrm_min_unprocessed(self) -> None:
         paths = sorted(Path("connection").rglob("grrm_min.com"))
         paths_new = []
