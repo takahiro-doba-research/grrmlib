@@ -168,6 +168,21 @@ class ConnectionWorkflow:
         
         print(f"{count} grrm_min_message_CONTINUE.rrm files created")
     
+    def delete_grrm_min(self, files: list[str] | str) -> None:
+        files = [files] if isinstance(files, str) else files
+        count = 0
+        
+        for path in Path("connection").rglob("grrm_min_message_ERROR.rrm"):
+            for file in files:
+                file_delete = path.with_name(file)
+                try:
+                    file_delete.unlink()
+                    count += 1
+                except FileNotFoundError:
+                    pass
+        
+        print(f"{count} files deleted")
+    
     def list_grrm_min_unprocessed(self) -> None:
         paths = sorted(Path("connection").rglob("grrm_min.com"))
         paths_new = []
