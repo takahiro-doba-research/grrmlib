@@ -24,11 +24,13 @@ class ConnectionWorkflow:
     def __init__(
         self,
         *,
+        folder_connection: str,
         folder_seq: str,
         folders_sub: list[str],
         path_gaussian_sp: str | Path,
         path_grrm_min: str | Path,
     ) -> None:
+        self.folder_connection = folder_connection
         self.folder_seq = folder_seq
         self.folders_sub = folders_sub
         self.path_gaussian_sp = Path(path_gaussian_sp)
@@ -88,19 +90,19 @@ class ConnectionWorkflow:
         )
         writer.write_mols(
             mols,
-            "connection",
+            self.folder_connection,
             self.folders,
             "gaussian_sp.com"
         )
     
     def list_gaussian_sp(self) -> None:
-        paths = sorted(Path("connection").rglob("gaussian_sp.com"))
+        paths = sorted(Path(self.folder_connection).rglob("gaussian_sp.com"))
         Path("gaussian_sp.txt").write_text("\n".join(str(p) for p in paths))
         print(f"{len(paths)} gaussian_sp jobs listed.")
     
     def analyze_gaussian_sp(self) -> None:
         reader = GaussianOutputReader()
-        seqs = reader.read_mols("connection", "gaussian_sp.log")
+        seqs = reader.read_mols(self.folder_connection, "gaussian_sp.log")
         exporter = PolarsExporter()
         df = exporter.export(
             seqs,
@@ -126,7 +128,7 @@ class ConnectionWorkflow:
         df = pl.read_csv("gaussian_sp_selected.csv")
         
         reader = GaussianInputReader()
-        mols = reader.read_mols("connection", "gaussian_sp.com")
+        mols = reader.read_mols(self.folder_connection, "gaussian_sp.com")
         mols_selected = Molecules({
             row: mols[row]
             for row in df.select(self.folders).iter_rows()
@@ -140,25 +142,25 @@ class ConnectionWorkflow:
         )
         writer.write_mols(
             mols_selected,
-            "connection",
+            self.folder_connection,
             self.folders,
             "grrm_min.com",
             overwrite=overwrite
         )
     
     def list_grrm_min(self) -> None:
-        paths = sorted(Path("connection").rglob("grrm_min.com"))
+        paths = sorted(Path(self.folder_connection).rglob("grrm_min.com"))
         Path("grrm_min.txt").write_text("\n".join(str(p) for p in paths))
         print(f"{len(paths)} grrm_min jobs listed.")
     
     def list_grrm_min_error(self) -> None:
-        paths = sorted(Path("connection").rglob("grrm_min_message_ERROR.rrm"))
+        paths = sorted(Path(self.folder_connection).rglob("grrm_min_message_ERROR.rrm"))
         paths_new = [str(p.with_name("grrm_min.com")) for p in paths]
         Path("grrm_min_error.txt").write_text("\n".join(paths_new))
         print(f"{len(paths_new)} grrm_min error jobs listed.")
     
     def write_grrm_min_continue(self) -> None:
-        paths = sorted(Path("connection").rglob("grrm_min_message_ERROR.rrm"))
+        paths = sorted(Path(self.folder_connection).rglob("grrm_min_message_ERROR.rrm"))
         count = 0
         
         for path in paths:
@@ -172,7 +174,7 @@ class ConnectionWorkflow:
         files = [files] if isinstance(files, str) else files
         count = 0
         
-        for path in Path("connection").rglob("grrm_min_message_ERROR.rrm"):
+        for path in Path(self.folder_connection).rglob("grrm_min_message_ERROR.rrm"):
             for file in files:
                 file_delete = path.with_name(file)
                 try:
@@ -184,7 +186,7 @@ class ConnectionWorkflow:
         print(f"{count} files deleted")
     
     def list_grrm_min_unprocessed(self) -> None:
-        paths = sorted(Path("connection").rglob("grrm_min.com"))
+        paths = sorted(Path(self.folder_connection).rglob("grrm_min.com"))
         paths_new = []
         
         for path in paths:
@@ -201,7 +203,7 @@ class ConnectionWorkflow:
     
     def analyze_grrm_min(self, version: str = "GRRM23") -> None:
         reader = GRRMMINOutputReader(version=version)
-        mols = reader.read_mols("connection", "grrm_min.log")
+        mols = reader.read_mols(self.folder_connection, "grrm_min.log")
         exporter = PolarsExporter()
         df = exporter.export(
             mols,
