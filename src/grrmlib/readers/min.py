@@ -113,7 +113,7 @@ class GRRMMINOutputReader:
     
     def _parse_opt(self, lines: list[str]) -> Molecule:
         index_energy = [i for i, l in enumerate(lines) if l.startswith("ENERGY")][0]
-        lines_atomcoords = lines[2:index_energy]
+        lines_atomcoords = lines[1:index_energy]
         labels, symbols, atomcoords = self._parse_atomcoords(lines_atomcoords)
         scfenergy = float(re.search(r"=\s*(-?\d+\.?\d+)\s*", lines[index_energy]).group(1))
         mult = float(re.search(r"=\s*(-?\d+\.?\d+)", lines[index_energy + 1]).group(1)) * 2 + 1
