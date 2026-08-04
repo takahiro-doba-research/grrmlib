@@ -29,6 +29,7 @@ class Molecule:
     _allowed_extra = {
         "afirenergy",
         "chk",
+        "connection",
         "enthalpy",
         "enthalpy_repl",
         "enthalpy_correction",
@@ -40,6 +41,7 @@ class Molecule:
         "grads",
         "hessian",
         "infile",
+        "link0",
         "mem",
         "nmeigen",
         "nprocshared",
@@ -122,16 +124,14 @@ class Molecule:
         setattr(self_new, attr, getattr(mol, attr))
         return self_new
     
-    def iter_atoms(self, with_notes: bool = False) -> Iterator[
-        tuple[str, np.ndarray] | tuple[str, np.ndarray, Sequence[int]]
-    ]:
+    def iter_atoms(self) -> Iterator[tuple[str, np.ndarray, Sequence | None]]:
         self.validate()
-        if with_notes:
+        if self.notes is None:
+            for symbol, atomcoord in zip(self.symbols, self.atomcoords):
+                yield symbol, atomcoord, None
+        else:
             for symbol, atomcoord, note in zip(self.symbols, self.atomcoords, self.notes):
                 yield symbol, atomcoord, note
-        else:
-            for symbol, atomcoord in zip(self.symbols, self.atomcoords):
-                yield symbol, atomcoord
     
     def reset_labels(self, offset: int = 0) -> Self:
         mol = self.copy()

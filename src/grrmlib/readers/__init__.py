@@ -2,7 +2,6 @@
 from .gaussian import (
     GaussianInputReader,
     GaussianOutputReader,
-    read_gaussian_input,
 )
 
 from .xyz import XYZReader
