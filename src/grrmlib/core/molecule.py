@@ -198,6 +198,9 @@ class Molecule:
         
         return total_e % 2 != self.mult % 2
     
+    # ------------------------
+    # ↓↓↓ to be deprecated ↓↓↓
+    # ------------------------
     def get_distance(self, label0: int, label1: int) -> float:
         from ..operations import get_distance
         indices = self.labels_to_indices([label0, label1])

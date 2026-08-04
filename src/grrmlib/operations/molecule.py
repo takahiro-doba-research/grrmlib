@@ -3,25 +3,6 @@ import networkx as nx
 from ..core import Molecule, Molecules
 
 
-def separate(mol: Molecule, old: bool = False) -> Molecules:
-    mol.validate()
-    A = mol.get_adj_matrix()
-    G = nx.from_numpy_array(A)
-    
-    if old:
-        components = sorted(nx.connected_components(G), key=len, reverse=True)
-    else:
-        components = sorted(nx.connected_components(G), key=min)
-    
-    mols = Molecules()
-    for i, component in enumerate(components):
-        indices = sorted(component)
-        fragment = mol._select_by_indices(indices)
-        mols[i] = fragment
-    
-    return mols
-
-
 def product_charge_mult(
     mol: Molecule,
     charges: list[int] | int,

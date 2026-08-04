@@ -2,9 +2,8 @@ from typing import Iterator
 
 import numpy as np
 
-from .atomcoords import overlay, rotate
 from .exceptions import FragmentNotFoundError, ManyFragmentsFoundError
-from ..core import Molecule, Molecules, GroupedMolecules
+from ..core import Molecule, Molecules, GroupedMolecules, overlay, rotate
 
 
 def read_connectivity(mol):

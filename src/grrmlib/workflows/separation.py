@@ -10,11 +10,8 @@ from ..readers import (
     ConnectableReader,
     read_eq_list,
 )
-from ..core import Molecules, is_identical
-from ..operations import (
-    separate,
-    product_charge_mult,
-)
+from ..core import Molecules, is_identical, separate
+from ..operations import product_charge_mult
 from ..writers import (
     GaussianInputWriter,
     GRRMInputWriter,

@@ -4,16 +4,7 @@ from .exceptions import (
     ChargeError,
     MultiplicityError,
 )
-from .atomcoords import (
-    get_distance,
-    get_dihedral_angle,
-    overlay,
-    rotate,
-)
-from .molecule import (
-    separate,
-    product_charge_mult,
-)
+from .molecule import product_charge_mult
 from .connectable import (
     read_connectivity,
     step_to_angles,

@@ -1,12 +1,13 @@
 import numpy as np
+from scipy.spatial import distance
 from scipy.spatial.transform import Rotation as R
 
 
-def get_distance(atomcoords, index_a, index_b):
+def _get_distance(atomcoords, index_a, index_b):
     return np.linalg.norm(atomcoords[index_a] - atomcoords[index_b])
 
 
-def get_dihedral_angle(atomcoords, index_a, index_b, index_c, index_d, degrees=False):
+def _get_dihedral_angle(atomcoords, index_a, index_b, index_c, index_d, degrees=False):
     """
     Returns dihedral angle.
     a-b-c-d dihedral, right-hand rule, range (-pi, pi].
@@ -47,7 +48,7 @@ def get_dihedral_angle(atomcoords, index_a, index_b, index_c, index_d, degrees=F
     return angle
 
 
-def overlay(
+def _overlay(
     atomcoords0,
     atomcoords1,
     index_a,
@@ -124,7 +125,7 @@ def overlay(
     return atomcoords1
 
 
-def rotate(atomcoords, index_a, index_b, angle, degrees=False):
+def _rotate(atomcoords, index_a, index_b, angle, degrees=False):
     """
     Rotates atomcoords around the a – b axis by `angle` (radians).
     Right-hand rule: positive angle rotates according to a –> b direction.
@@ -138,3 +139,7 @@ def rotate(atomcoords, index_a, index_b, angle, degrees=False):
     rot = R.from_rotvec(axis * angle)
     atomcoords = rot.apply(atomcoords - a) + a
     return atomcoords
+
+
+def _get_distance_matrix(atomcoords: np.ndarray) -> np.ndarray:
+    return distance.cdist(atomcoords, atomcoords)
