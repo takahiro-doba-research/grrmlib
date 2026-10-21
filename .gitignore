@@ -20,6 +20,8 @@
 !tests/**/
 !tests/**/*.py
 !tests/data/**
+# 未公開の計算データ。GitHub に載せないので、上の許可より後に書いて必ず除外する
+tests/data_private/
 
 # ignore junk
 .ipynb_checkpoints/

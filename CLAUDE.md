@@ -29,7 +29,11 @@ docker compose run --rm app pytest tests/io       # 一部だけ
 
 - `tests/` は `src/grrmlib` と同じ構成（`io/`, `core/`, `operations/`, `workflows/`, `jobs/`）。コードを変えたら対応するテストも直す
 - サンプルのファイルは `tests/data/`。今は各形式に合わせて手で作ったもので、実際の計算の出力ではない（Gaussian / GRRM の log はまだない）
-- 共通の fixture（`data`, `water`, `eqs`, `pts`）は `tests/conftest.py`
+- **未公開の入力・出力ファイルは必ず `tests/data_private/` に置く**。リポジトリはパブリックなので、`.gitignore` で除外して GitHub に載せない
+  - `tests/data/` には公開してよいファイルだけを置く。未公開のファイルを `tests/data/` に移したり写したりしない
+  - `git add -f` で `tests/data_private/` のファイルを追加しない。コミットの前に `git status` で入っていないことを確かめる
+  - テストからは fixture で `data_private("gaussian/sp.log")` のように使う。ファイルがない環境（GitHub から clone した人など）ではそのテストを skip する
+- 共通の fixture（`data`, `data_private`, `water`, `eqs`, `pts`）は `tests/conftest.py`
 - `--import-mode=importlib` なので、別のフォルダに同じ名前のテストファイルを置ける。テストどうしで import はできないので、共通の処理は conftest.py に書く
 - ASE のテストは EMT を使う（UMA は Hugging Face の認証が要るので使わない）
 - 既知のバグは `pytest.mark.xfail(strict=True)` で残す。直したら xfail を外す
