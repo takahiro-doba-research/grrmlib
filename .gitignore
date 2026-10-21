@@ -4,6 +4,11 @@
 !LICENSE.txt
 !pyproject.toml
 
+# docker
+!Dockerfile
+!docker-compose.yml
+!requirements.txt
+
 # source
 !src/
 !src/**/
