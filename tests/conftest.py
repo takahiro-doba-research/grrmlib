@@ -1,7 +1,7 @@
 """
 テスト全体で使う fixture。
 
-tests/data のファイルは各形式に合わせて手で作ったもので、実際の計算の出力ではない。
+tests/data には公開してよい実際の計算の入力・出力を置く（大きい log は先頭だけに縮めている）。
 tests/data_private には未公開の計算データを置く。git の管理外なので、ない環境ではそのテストを skip する。
 """
 from collections.abc import Callable
@@ -51,11 +51,12 @@ def water() -> gl.Molecule:
 
 @pytest.fixture
 def eqs(data: Path) -> gl.Molecules:
-    # 水 2 分子が 5 Å 離れて並んだ構造が 2 つ
-    return gl.read_eq_list(data / "grrm/EQ_list.log")
+    # SC-AFIR の EQ_list の先頭 3 件（Pd 錯体、53 原子）。
+    # どれも 3 つのフラグメント（29 / 12 / 12 原子）に分かれ、EQ 0 と EQ 2 は結合が同じ
+    return gl.read_eq_list(data / "grrm/td_c1_193_SCAFIR6_EQ_list.log")
 
 
 @pytest.fixture
 def pts(data: Path) -> gl.Molecules:
-    # TS 0: EQ 0 - EQ 1, TS 1: EQ 1 - ??
-    return gl.read_pt_list(data / "grrm/TS_list.log")
+    # 同じ計算の PT_list の先頭 3 件。CONNECTION は 8 - 109, 49 - ??, 30 - 110
+    return gl.read_pt_list(data / "grrm/td_c1_193_SCAFIR6_PT_list.log")

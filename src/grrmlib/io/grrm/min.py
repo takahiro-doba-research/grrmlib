@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 
 from ...core import Molecule, Molecules, Trajectory
+from ._spin import spin2_to_mult
 from .._files import read_files
 
 
@@ -102,7 +103,7 @@ class _MINOutputParser:
         labels, symbols, atomcoords = self._parse_atomcoords(lines_atomcoords)
         scfenergy = float(re.search(r"\(\s*(-?\d+\.?\d+)\s*:", lines[index_item + 1]).group(1))
         afirenergy = float(re.search(r"ENERGY\s*(-?\d+\.?\d+)\s*\(", lines[index_item + 1]).group(1))
-        mult = float(re.search(r"Spin\(\*\*2\)\s*(-?\d+\.?\d+)", lines[index_item + 2]).group(1)) * 2 + 1
+        mult = spin2_to_mult(float(re.search(r"Spin\(\*\*2\)\s*(-?\d+\.?\d+)", lines[index_item + 2]).group(1)))
         index_nmeigen = [i for i, l in enumerate(lines) if l.startswith("NORMAL MODE EIGENVALUE")][0]
         lines_nmeigen = lines[index_nmeigen + 1:]
         nmeigen = np.concatenate([list(map(float, l.split())) for l in lines_nmeigen])
@@ -122,7 +123,7 @@ class _MINOutputParser:
         lines_atomcoords = lines[1:index_energy]
         labels, symbols, atomcoords = self._parse_atomcoords(lines_atomcoords)
         scfenergy = float(re.search(r"=\s*(-?\d+\.?\d+)\s*", lines[index_energy]).group(1))
-        mult = float(re.search(r"=\s*(-?\d+\.?\d+)", lines[index_energy + 1]).group(1)) * 2 + 1
+        mult = spin2_to_mult(float(re.search(r"=\s*(-?\d+\.?\d+)", lines[index_energy + 1]).group(1)))
         zpve = float(m.group(1)) if (m := re.search(r"=\s*(-?\d+\.?\d+)", lines[index_energy + 2])) else None
         index_grad = [i for i, l in enumerate(lines) if l.startswith("GRADIENT VECTOR")][0]
         index_hess = [i for i, l in enumerate(lines) if l.startswith("HESSIAN MATRIX")][0]

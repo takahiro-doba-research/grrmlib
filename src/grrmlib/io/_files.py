@@ -89,8 +89,21 @@ def write_files(
         write(mol, path, **kwargs)
 
 
-def parse_note(tokens: list[str]) -> list[int | float]:
-    return [int(t) if t.lstrip("-").isdigit() else float(t) for t in tokens]
+def _parse_token(token: str) -> int | float | str:
+    try:
+        return int(token)
+    except ValueError:
+        pass
+    
+    try:
+        return float(token)
+    except ValueError:
+        # ONIOM の層 (H / M / L) など
+        return token
+
+
+def parse_note(tokens: list[str]) -> list[int | float | str]:
+    return [_parse_token(t) for t in tokens]
 
 
 def build_atomcoords(mol: Molecule, *, with_notes: bool = True) -> list[str]:
@@ -107,7 +120,7 @@ def parse_atomcoords(lines: list[str]) -> tuple[
     np.ndarray,
     list[str],
     np.ndarray,
-    list[list[int | float]] | None
+    list[list[int | float | str]] | None
 ]:
     labels = np.arange(1, len(lines) + 1)
     symbols = [l.split()[0] for l in lines]

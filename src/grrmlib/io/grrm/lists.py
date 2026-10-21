@@ -3,6 +3,23 @@ import re
 import numpy as np
 
 from ...core import Molecule, Molecules
+from ._spin import spin2_to_mult
+
+
+def _parse_energy(line: str) -> tuple[float, float | None]:
+    """
+    (scfenergy, afirenergy) を返す。Energy の行は 2 通り:
+    - AFIR を使った計算: "Energy = <AFIR エネルギー> (<SCF エネルギー> : <AFIR の力の項>)"
+    - 使わない計算:     "Energy = <SCF エネルギー>"  （afirenergy は None）
+    """
+    m = re.search(r"=\s*(-?\d+\.?\d+)\s*\(\s*(-?\d+\.?\d+)\s*:", line)
+    
+    if m:
+        afirenergy, scfenergy = map(float, m.groups())
+        return scfenergy, afirenergy
+    
+    scfenergy = float(re.search(r"=\s*(-?\d+\.?\d+)", line).group(1))
+    return scfenergy, None
 
 
 def read_eq_list(path):
@@ -22,9 +39,8 @@ def read_eq_list(path):
         labels = np.arange(1, len(lines_coord) + 1)
         symbols = [line.split()[0] for line in lines_coord]
         atomcoords = np.array([list(map(float, line.split()[1:4])) for line in lines_coord])
-        scfenergy = float(re.search(r"\(\s*(-?\d+\.?\d+)\s*:", lines_eq[index_energy]).group(1))
-        afirenergy = float(re.search(r"=\s*(-?\d+\.?\d+)\s*\(", lines_eq[index_energy]).group(1))
-        mult = int(float(re.search(r"=\s*(-?\d+\.?\d+)", lines_eq[index_energy + 1]).group(1))) * 2 + 1
+        scfenergy, afirenergy = _parse_energy(lines_eq[index_energy])
+        mult = spin2_to_mult(float(re.search(r"=\s*(-?\d+\.?\d+)", lines_eq[index_energy + 1]).group(1)))
         zpve = float(re.search(r"=\s*(-?\d+\.?\d+)", lines_eq[index_energy + 2]).group(1))
         lines_nmeigen = lines_eq[index_energy + 4:]
         nmeigen = np.concatenate([list(map(float, line.split())) for line in lines_nmeigen])
@@ -60,9 +76,8 @@ def read_pt_list(path):
         labels = np.arange(1, len(lines_coord) + 1)
         symbols = [line.split()[0] for line in lines_coord]
         atomcoords = np.array([list(map(float, line.split()[1:4])) for line in lines_coord])
-        scfenergy = float(re.search(r"\(\s*(-?\d+\.?\d+)\s*:", lines_pt[index_energy]).group(1))
-        afirenergy = float(re.search(r"=\s*(-?\d+\.?\d+)\s*\(", lines_pt[index_energy]).group(1))
-        mult = int(float(re.search(r"=\s*(-?\d+\.?\d+)", lines_pt[index_energy + 1]).group(1))) * 2 + 1
+        scfenergy, afirenergy = _parse_energy(lines_pt[index_energy])
+        mult = spin2_to_mult(float(re.search(r"=\s*(-?\d+\.?\d+)", lines_pt[index_energy + 1]).group(1)))
         zpve = float(re.search(r"=\s*(-?\d+\.?\d+)", lines_pt[index_energy + 2]).group(1))
         index_connection = [i for i, line in enumerate(lines_pt) if line.startswith("CONNECTION")][0]
         lines_nmeigen = lines_pt[index_energy + 4:index_connection]

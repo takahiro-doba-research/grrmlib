@@ -28,7 +28,7 @@ docker compose run --rm app pytest tests/io       # 一部だけ
 ```
 
 - `tests/` は `src/grrmlib` と同じ構成（`io/`, `core/`, `operations/`, `workflows/`, `jobs/`）。コードを変えたら対応するテストも直す
-- サンプルのファイルは `tests/data/`。今は各形式に合わせて手で作ったもので、実際の計算の出力ではない（Gaussian / GRRM の log はまだない）
+- `tests/data/` には公開してよい実際の計算の入力・出力を置く。大きい log（数十 MB の EQ_list など）は先頭の数件だけに縮めて置き、元のファイルは `tests/data_private/` に置く
 - **未公開の入力・出力ファイルは必ず `tests/data_private/` に置く**。リポジトリはパブリックなので、`.gitignore` で除外して GitHub に載せない
   - `tests/data/` には公開してよいファイルだけを置く。未公開のファイルを `tests/data/` に移したり写したりしない
   - `git add -f` で `tests/data_private/` のファイルを追加しない。コミットの前に `git status` で入っていないことを確かめる
@@ -62,10 +62,11 @@ docker compose run --rm app pytest tests/io       # 一部だけ
 - **Molecule の属性**: 名前は cclib に合わせる（`scfenergy`, `atomcoords`, `vibfreqs` など）。基本属性以外は `Molecule._allowed_extra` に登録しないと `TypeError` になる
 - **notes**: 原子ごとの追加情報（連結の指定など）。座標の後ろの列として読み書きし、値は int / float。書式は `operations/connectable.py` の `read_connectivity` を参照。Gaussian / GRRM の入力に書き出すときは workflows では `with_notes=False`
 - **単位**: grrmlib のエネルギーは Hartree、座標は Å。ASE（eV）との変換は `calculators.HARTREE_IN_EV`
+- **GRRM の出力**: 多重度は Spin(**2) = S(S+1) から `io/grrm/_spin.py` の `spin2_to_mult` で求める。ヘッセ行列（`hessian`）は下三角だけに値が入り、上三角は NaN（仕様）
 - コメント・docstring は日本語。既存のコードのスタイル（4 スペース、引数ごとの改行、`# Functions for reading.` の区切り）に合わせる
 - DataFrame は polars を使う（pandas は使わない）
 
 ## 既知の問題
 
-- `io/grrm/lup_ts.py` と `_ircirc.py` は存在しない `_optopt` を import しており動かない（公開していない）
+- `io/grrm/lup_ts.py` の `read_lup_ts` は動くが、まだ公開していない（`from grrmlib.io.grrm.lup_ts import read_lup_ts`）
 - `operations/connectable.py` の `connect_all_and_write_as_gaussian_input` は未定義の `GaussianInputWriter` を使っており動かない

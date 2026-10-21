@@ -89,8 +89,9 @@ def test_charge_mult_is_valid_rejects_non_integer(water):
 
 
 def test_molecules_methods(eqs):
-    assert list(eqs.filter(lambda eq: eq.scfenergy < -152.75)) == [0]
-    assert eqs.smallest("scfenergy").name == 0
+    # scfenergy: EQ 0 = -1004.3845, EQ 1 = -1004.3754, EQ 2 = -1004.3882
+    assert list(eqs.filter(lambda eq: eq.scfenergy < -1004.38)) == [0, 2]
+    assert eqs.smallest("scfenergy").name == 2
     assert eqs.largest("scfenergy").name == 1
     assert eqs.map(lambda eq: eq.reset_labels(10))[0].labels[0] == 11
     assert list(gl.Molecules({"a": eqs[0], "b": eqs[1]}).reset_keys()) == [0, 1]
@@ -98,11 +99,13 @@ def test_molecules_methods(eqs):
 
 def test_grouped_molecules(eqs):
     frags = eqs.expand(gl.separate)
-
-    assert set(frags) == {0, 1}
-    assert set(frags.flatten()) == {(0, 0), (0, 1), (1, 0), (1, 1)}
-    assert list(frags.reset_keys().flatten()) == [(0, 0), (0, 1), (1, 2), (1, 3)]
-    assert list(frags.contract(lambda mols: mols[0])) == [0, 1]
-    assert np.allclose(
-        frags.map(lambda m: m.reset_labels())[0][1].labels, [1, 2, 3]
+    
+    assert set(frags) == {0, 1, 2}
+    assert list(frags.flatten()) == [(i, j) for i in range(3) for j in range(3)]
+    assert list(frags.reset_keys().flatten()) == [
+        (0, 0), (0, 1), (0, 2), (1, 3), (1, 4), (1, 5), (2, 6), (2, 7), (2, 8)
+    ]
+    assert list(frags.contract(lambda mols: mols[0])) == [0, 1, 2]
+    assert np.array_equal(
+        frags.map(lambda m: m.reset_labels())[0][1].labels, np.arange(1, 13)
     )

@@ -5,15 +5,16 @@ import grrmlib as gl
 
 
 def test_read_gaussian_input(data):
-    mol = gl.read_gaussian_input(data / "gaussian/sp.com")
-
-    assert mol.link0 == ["%NProcShared=8", "%Mem=8GB", "%Chk=sp.chk"]
-    assert mol.route == ["# B3LYP/6-31G(d) SP"]
-    assert mol.title == ["water"]
+    mol = gl.read_gaussian_input(data / "gaussian/SP_connection.com")
+    
+    assert mol.link0 == ["%mem=2000MW"]
+    assert mol.route == ["#p B3LYP/LanL2DZ SCF=SP"]
+    assert mol.title == ["single point calculation with gaussian"]
     assert (mol.charge, mol.mult) == (0, 1)
-    assert mol.symbols == ["O", "H", "H"]
-    assert list(mol.labels) == [1, 2, 3]
-    assert np.allclose(mol.atomcoords[1], [0.96, 0.0, 0.0])
+    assert len(mol) == 53
+    assert mol.symbols[24] == "Pd"
+    assert list(mol.labels) == list(range(1, 54))
+    assert np.allclose(mol.atomcoords[0], [1.29312168, 1.88612545, -0.82599387])
     assert mol.notes is None
 
 
@@ -72,5 +73,5 @@ def test_write_gaussian_scan(tmp_path, eqs):
     text = (tmp_path / "scan.log").read_text()
 
     assert text.count("SCF Done") == len(eqs)
-    assert "scan point     2 out of     2" in text
+    assert "scan point     3 out of     3" in text
     assert text.endswith("Normal termination of Gaussian 16\n")

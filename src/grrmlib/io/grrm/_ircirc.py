@@ -2,6 +2,7 @@ import re
 import numpy as np
 
 from ...core import Molecule
+from ._spin import spin2_to_mult
 from ._optopt import _read_optopt
 
 
@@ -30,7 +31,7 @@ def _read_ircirc(lines):
         symbols = [line.split()[0] for line in lines_coord]
         atomcoords = np.array([list(map(float, line.split()[1:4])) for line in lines_coord])
         scfenergy = float(re.search(r"ENERGY\s*=\s*(-?\d+\.?\d+)", lines_step[index_energy]).group(1))
-        mult = float(re.search(r"Spin\(\*\*2\)\s*=\s*(-?\d+\.?\d+)", lines_step[index_energy + 1]).group(1))
+        mult = spin2_to_mult(float(re.search(r"Spin\(\*\*2\)\s*=\s*(-?\d+\.?\d+)", lines_step[index_energy + 1]).group(1)))
         molecule = Molecule(
             name=name,
             mult=mult,
@@ -61,7 +62,7 @@ def _read_ircirc(lines):
         symbols = [line.split()[0] for line in lines_coord]
         atomcoords = np.array([list(map(float, line.split()[1:4])) for line in lines_coord])
         scfenergy = float(re.search(r"ENERGY\s*=\s*(-?\d+\.?\d+)", lines_step[index_energy]).group(1))
-        mult = float(re.search(r"Spin\(\*\*2\)\s*=\s*(-?\d+\.?\d+)", lines_step[index_energy + 1]).group(1))
+        mult = spin2_to_mult(float(re.search(r"Spin\(\*\*2\)\s*=\s*(-?\d+\.?\d+)", lines_step[index_energy + 1]).group(1)))
         molecule = Molecule(
             name=name,
             mult=mult,
