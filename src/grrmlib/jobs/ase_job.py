@@ -13,6 +13,7 @@ import numpy as np
 
 from ..core import Molecule, Molecules
 from ..calculators import single_point, optimize
+from ..io import key_to_folder
 
 if TYPE_CHECKING:
     from ase.calculators.calculator import Calculator
@@ -33,18 +34,14 @@ _RECORD_ATTRS = [
 _calc: Calculator | None = None
 
 
-def key_to_path(folder: str | Path, key: Hashable, basename: str) -> Path:
-    key = key if isinstance(key, tuple) else (key, )
-    return Path(folder).joinpath(*map(str, key)) / basename
-
-
 def write_result(mol: Molecule, key: Hashable, path: Path) -> None:
     record = {"key": list(key) if isinstance(key, tuple) else key}
     record |= {a: getattr(mol, a, None) for a in _RECORD_ATTRS}
     # labels と notes も残さないと読み直したときに元の分子と対応がとれない
     record["labels"] = [int(l) for l in mol.labels]
+    # notes には回転角などの float も入るので、numpy の数値を Python の数値に直すだけにする
     record["notes"] = (
-        [[int(n) for n in note] for note in mol.notes]
+        [[np.asarray(n).item() for n in note] for note in mol.notes]
         if mol.notes is not None
         else None
     )
@@ -154,7 +151,7 @@ class ASEJobRunner:
     ) -> Molecules:
         basename = basename or f"{task}.xyz"
         jobs = [
-            (key, mol, key_to_path(folder, key, basename))
+            (key, mol, key_to_folder(folder, key) / basename)
             for key, mol in mols.items()
         ]
         jobs_todo = [job for job in jobs if not job[2].exists()]

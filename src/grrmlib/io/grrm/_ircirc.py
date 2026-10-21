@@ -1,7 +1,7 @@
 import re
 import numpy as np
 
-from ..core import Molecule
+from ...core import Molecule
 from ._optopt import _read_optopt
 
 

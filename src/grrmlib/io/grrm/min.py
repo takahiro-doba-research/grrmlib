@@ -3,39 +3,45 @@ from pathlib import Path
 
 import numpy as np
 
-from ..core import Molecule, Molecules, Trajectory
+from ...core import Molecule, Molecules, Trajectory
+from .._files import read_files
 
 
-class GRRMMINOutputReader:
+def read_grrm_min_output(
+    path: str | Path,
+    *,
+    version: str = "GRRM23"
+) -> tuple[Trajectory, Molecule, Molecule | None]:
+    """
+    MIN の log を読み、(最適化の各ステップ, 最適化後の構造, 振動解析の結果) を返す。
+    振動解析をしていない場合、3 つ目は None。
+    """
+    lines = Path(path).read_text().splitlines()
+    return _MINOutputParser(version).parse(lines)
+
+
+def read_grrm_min_outputs(
+    folder: str | Path,
+    basename: str | Path,
+    *,
+    version: str = "GRRM23",
+    ignore_errors: bool = False
+) -> Molecules:
+    """
+    各 log の最適化後の構造だけを集める。
+    """
+    return read_files(
+        folder,
+        basename,
+        lambda path: read_grrm_min_output(path, version=version)[1],
+        ignore_errors=ignore_errors
+    )
+
+
+class _MINOutputParser:
     
     def __init__(self, version: str = "GRRM23") -> None:
         self.version = version
-    
-    def read_mols(
-        self,
-        folder: str | Path,
-        basename: str = "grrm.log"
-    ) -> Molecules:
-        paths = sorted(Path(folder).rglob(basename))
-        mols = Molecules()
-        
-        for path in paths:
-            key = tuple(p.split("=")[1] for p in path.parts[1:-1])
-            key = tuple(None if k == "None" else int(k) for k in key)
-            try:
-                _, opt, _ = self.read(path)
-                mols[key] = opt
-            except Exception as e:
-                mols[key] = Molecule()
-                print(key, e)
-        
-        return mols
-    
-    def read(self, path: str | Path) -> tuple[Trajectory, Molecule, Molecule | None]:
-        path = Path(path)
-        text = path.read_text()
-        lines = text.splitlines()
-        return self.parse(lines)
     
     def parse(self, lines: list[str]) -> tuple[Trajectory, Molecule, Molecule | None]:
         indices_optopt = [i for i, l in enumerate(lines) if l.startswith("OPTOPT")]

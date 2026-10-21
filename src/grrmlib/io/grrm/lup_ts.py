@@ -1,4 +1,4 @@
-from ..core.data import atomic_number
+from ...core.data import atomic_number
 from ._ircirc import _read_ircirc
 
 
