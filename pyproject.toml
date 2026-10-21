@@ -12,3 +12,9 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# 別のフォルダに同じ名前のテストファイルを置けるようにする。
+# コンテナは root で動くので、ホストで消せない .pytest_cache を作らない
+addopts = ["--import-mode=importlib", "-p", "no:cacheprovider"]

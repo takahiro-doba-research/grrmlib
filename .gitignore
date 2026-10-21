@@ -15,6 +15,12 @@
 !src/**/
 !src/**/*.py
 
+# tests
+!tests/
+!tests/**/
+!tests/**/*.py
+!tests/data/**
+
 # ignore junk
 .ipynb_checkpoints/
 __pycache__/

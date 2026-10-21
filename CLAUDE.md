@@ -19,7 +19,20 @@ docker compose run --rm app python xxx.py # スクリプトやテストはコン
 
 - サービス名は `app`。リポジトリを `/work` にマウントし、`PYTHONPATH=/work/src` で読む（ソースの変更に再ビルドは不要）
 - torch は CPU 版（このマシンに GPU はない）。numpy と torch は fairchem-core の制約（`numpy<2.5`, `torch~=2.13.0`）に合わせて固定している
-- テストスイートはまだない。確認用スクリプトはリポジトリ直下に一時的に置いて実行し、終わったら消す
+
+## テスト
+
+```bash
+docker compose run --rm app pytest                # 全部
+docker compose run --rm app pytest tests/io       # 一部だけ
+```
+
+- `tests/` は `src/grrmlib` と同じ構成（`io/`, `core/`, `operations/`, `workflows/`, `jobs/`）。コードを変えたら対応するテストも直す
+- サンプルのファイルは `tests/data/`。今は各形式に合わせて手で作ったもので、実際の計算の出力ではない（Gaussian / GRRM の log はまだない）
+- 共通の fixture（`data`, `water`, `eqs`, `pts`）は `tests/conftest.py`
+- `--import-mode=importlib` なので、別のフォルダに同じ名前のテストファイルを置ける。テストどうしで import はできないので、共通の処理は conftest.py に書く
+- ASE のテストは EMT を使う（UMA は Hugging Face の認証が要るので使わない）
+- 既知のバグは `pytest.mark.xfail(strict=True)` で残す。直したら xfail を外す
 
 ## 構成（src/grrmlib）
 

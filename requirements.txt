@@ -11,3 +11,6 @@ cclib==1.8.1
 ase==3.29.0
 torch==2.13.0
 fairchem-core==2.23.0
+
+# テスト
+pytest==9.1.1
