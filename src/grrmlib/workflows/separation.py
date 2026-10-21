@@ -70,7 +70,8 @@ class SeparationWorkflow:
         df = to_dataframe(seqs, KEYS, ["scfenergy", "success"])
         df.write_csv("gaussian_sp.csv")
         
-        df_error = df.filter(pl.col("success") == False)
+        # log を読めなかったジョブは null なので、それも失敗に数える
+        df_error = df.filter(pl.col("success").ne_missing(True))
         print(f"{df_error.height} gaussian_sp jobs failed.")
     
     def write_grrm_min(self, *, overwrite: bool = False) -> None:
@@ -110,5 +111,6 @@ class SeparationWorkflow:
         df = to_dataframe(seqs, KEYS, ["scfenergy", "status"])
         df.write_csv("grrm_min.csv")
         
-        df_error = df.filter(pl.col("status") != "Minimum point was found")
+        # log を読めなかったジョブは null なので、それも失敗に数える
+        df_error = df.filter(pl.col("status").ne_missing("Minimum point was found"))
         print(f"{df_error.height} grrm_min jobs failed.")

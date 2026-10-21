@@ -75,3 +75,54 @@ def test_write_gaussian_scan(tmp_path, eqs):
     assert text.count("SCF Done") == len(eqs)
     assert "scan point     3 out of     3" in text
     assert text.endswith("Normal termination of Gaussian 16\n")
+
+
+# --------------------------------------------
+# 未公開のデータ（tests/data_private）を使うテスト
+# --------------------------------------------
+def test_read_gaussian_input_multiline_route(data_private):
+    mol = gl.read_gaussian_input(data_private("gaussian/TDB-01-175-lower-OPT.gjf"))
+    
+    assert mol.link0 == ["%Chk=TDB-01-175-lower-OPT.chk", "%NProcShared=16", "%Mem=1600MW"]
+    # 複数行の route はそのまま 1 行ずつ残す
+    assert mol.route == [
+        "#P M06L/Def2TZVP",
+        "Opt=MaxCycle=100",
+        "Freq=NoRaman",
+        "SCF=MaxCycle=512",
+        "Integral=Grid=UltraFine",
+        "SCRF=(IEFPCM,Solvent=DiChloroEthane)",
+    ]
+    assert mol.title == ["Cp*Fe(CyJohnPhosS)+"]
+    assert (mol.charge, mol.mult) == (1, 1)
+    assert len(mol) == 83
+    assert mol.symbols[:3] == ["Fe", "P", "S"]
+
+
+def test_read_gaussian_output(data_private):
+    mol = gl.read_gaussian_output(data_private("gaussian/TDB-01-175-lower-OPT.log"))
+    mol_in = gl.read_gaussian_input(data_private("gaussian/TDB-01-175-lower-OPT.gjf"))
+    
+    assert mol.success is True
+    assert (mol.charge, mol.mult) == (1, 1)
+    assert mol.symbols == mol_in.symbols
+    assert list(mol.labels) == list(range(1, 84))
+    assert mol.atomcoords.shape == (83, 3)
+    # 最後の "SCF Done:  E(RM06L) =  -3326.88401594" を Hartree で読む
+    assert mol.scfenergy == pytest.approx(-3326.88401594, abs=1e-6)
+
+
+def test_read_gaussian_outputs(tmp_path, data, data_private):
+    import shutil
+    
+    (tmp_path / "1/0").mkdir(parents=True)
+    shutil.copy(data_private("gaussian/TDB-01-175-lower-OPT.log"), tmp_path / "1/0/sp.log")
+    (tmp_path / "2/0").mkdir(parents=True)
+    shutil.copy(data / "gaussian/broken.log", tmp_path / "2/0/sp.log")
+    
+    with pytest.raises(Exception):
+        gl.read_gaussian_outputs(tmp_path, "sp.log")
+    
+    mols = gl.read_gaussian_outputs(tmp_path, "sp.log", ignore_errors=True)
+    assert mols[(1, 0)].success is True
+    assert mols[(2, 0)].atomcoords is None

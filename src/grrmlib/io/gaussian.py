@@ -82,7 +82,8 @@ def read_gaussian_output(path: str | Path) -> Molecule:
             labels=labels,
             symbols=symbols,
             atomcoords=data.atomcoords[-1],
-            scfenergy=data.scfenergies[-1],
+            # cclib の scfenergies は eV なので Hartree に直す
+            scfenergy=cclib.parser.utils.convertor(data.scfenergies[-1], "eV", "hartree"),
             success=success,
         )
 

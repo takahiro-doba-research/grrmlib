@@ -92,3 +92,43 @@ def test_write_grrm_min(workflow):
     assert mol.route == "# MIN/B3LYP/Def2SVP"
     assert mol.options == ["GauProc=24", "GauMem=2000", "EigenCheck", "MinFreqValue=50"]
     assert len(mol) == 29
+
+
+# --------------------------------------------
+# 未公開のデータ（tests/data_private）を使うテスト
+# --------------------------------------------
+def test_analyze_gaussian_sp(workflow, data, data_private, capsys):
+    # 計算が終わった log と、途中で落ちた log を 1 つずつ置く
+    folder = Path("separation/SG=0/SEQ=0/charge=1/mult=1")
+    folder.mkdir(parents=True)
+    shutil.copy(data_private("gaussian/TDB-01-175-lower-OPT.log"), folder / "gaussian_sp.log")
+    folder = Path("separation/SG=1/SEQ=1/charge=0/mult=1")
+    folder.mkdir(parents=True)
+    shutil.copy(data / "gaussian/broken.log", folder / "gaussian_sp.log")
+    
+    workflow.analyze_gaussian_sp()
+    # 読めなかった log も失敗に数える
+    assert "1 gaussian_sp jobs failed." in capsys.readouterr().out
+    df = pl.read_csv("gaussian_sp.csv")
+    
+    assert df.columns == ["SG", "SEQ", "charge", "mult", "scfenergy", "success"]
+    assert df.row(0) == (0, 0, 1, 1, pytest.approx(-3326.88401594, abs=1e-6), True)
+    # 読めなかった log は scfenergy と success が null
+    assert df.row(1) == (1, 1, 0, 1, None, None)
+
+
+def test_analyze_grrm_min(workflow, data, data_private, capsys):
+    folder = Path("separation/SG=0/SEQ=0/charge=0/mult=1")
+    folder.mkdir(parents=True)
+    shutil.copy(data_private("grrm/TDB-01-150-MIN.log"), folder / "grrm_min.log")
+    folder = Path("separation/SG=1/SEQ=1/charge=0/mult=1")
+    folder.mkdir(parents=True)
+    (folder / "grrm_min.log").write_text("broken\n")
+    
+    workflow.analyze_grrm_min()
+    assert "1 grrm_min jobs failed." in capsys.readouterr().out
+    df = pl.read_csv("grrm_min.csv")
+    
+    assert df.columns == ["SG", "SEQ", "charge", "mult", "scfenergy", "status"]
+    assert df.row(0) == (0, 0, 0, 1, pytest.approx(-2683.92399803277), "Minimum point was found")
+    assert df.row(1) == (1, 1, 0, 1, None, None)
