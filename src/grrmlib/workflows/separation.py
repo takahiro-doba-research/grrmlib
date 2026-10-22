@@ -2,7 +2,7 @@ from pathlib import Path
 
 import polars as pl
 
-from ..core import Molecules, is_identical, separate
+from ..core import GroupedMolecules, Molecules, is_identical, separate
 from ..io import (
     read_eq_list,
     read_gaussian_input,
@@ -42,8 +42,12 @@ class SeparationWorkflow:
         overwrite: bool = False
     ) -> None:
         eqs = read_eq_list(self.path_eq_list)
-        seqs = eqs.expand(lambda eq: separate(eq)).flatten().reset_keys()
-        seqs = seqs.cluster(is_identical).flatten()
+        # キーは (EQ, fragment)。その順に SEQ の番号を振る
+        frags = eqs.expand(lambda eq: separate(eq)).flatten()
+        sgs = frags.reset_keys().cluster(is_identical)
+        df = self._build_table(eqs, frags, sgs)
+        
+        seqs = sgs.flatten()
         seqs = seqs.expand(lambda seq: product_charge_mult(seq, charges, mults)).flatten()
         
         mol_method = read_gaussian_input(self.path_gaussian_sp)
@@ -59,6 +63,41 @@ class SeparationWorkflow:
             with_notes=False,
             overwrite=overwrite
         )
+        df.write_csv("separation.csv")
+    
+    @staticmethod
+    def _build_table(
+        eqs: Molecules,
+        frags: Molecules,
+        sgs: GroupedMolecules
+    ) -> pl.DataFrame:
+        """
+        G, EQ, SEQ, SG の対応表を作る。1 行が 1 つの SEQ。
+        G は EQ を、SG は SEQ を is_identical でまとめたグループ。
+        labels は SEQ の原子の元の EQ でのラベルを "_" でつないだもの。
+        """
+        eq_to_g = {
+            eq: g
+            for g, mols in eqs.cluster(is_identical).items()
+            for eq in mols
+        }
+        seq_to_sg = {
+            seq: sg
+            for sg, mols in sgs.items()
+            for seq in mols
+        }
+        rows = [
+            {
+                "G": eq_to_g[eq],
+                "EQ": eq,
+                "SEQ": seq,
+                "SG": seq_to_sg[seq],
+                "fragment": fragment,
+                "labels": "_".join(str(l) for l in frag.labels),
+            }
+            for seq, ((eq, fragment), frag) in enumerate(frags.items())
+        ]
+        return pl.DataFrame(rows)
     
     def list_gaussian_sp(self) -> None:
         paths = sorted(Path("separation").rglob("gaussian_sp.com"))

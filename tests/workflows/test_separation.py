@@ -50,6 +50,31 @@ def test_write_gaussian_sp(workflow, capsys):
     assert mol.notes is None
 
 
+def test_write_gaussian_sp_table(workflow, eqs):
+    workflow.write_gaussian_sp(charges=0, mults=1)
+    df = pl.read_csv("separation.csv")
+
+    assert df.columns == ["G", "EQ", "SEQ", "SG", "fragment", "labels"]
+    # EQ 0 と EQ 2 は結合が同じなので同じ G にまとまる
+    assert df["G"].to_list() == [0, 0, 0, 1, 1, 1, 0, 0, 0]
+    assert df["EQ"].to_list() == [0, 0, 0, 1, 1, 1, 2, 2, 2]
+    assert df["SEQ"].to_list() == list(range(9))
+    assert df["SG"].to_list() == [0, 1, 2, 3, 1, 2, 0, 1, 2]
+    assert df["fragment"].to_list() == [0, 1, 2] * 3
+
+    # labels から元の EQ の原子をたどれる
+    for eq, seq, labels in df.select(["EQ", "SEQ", "labels"]).iter_rows():
+        labels = [int(l) for l in labels.split("_")]
+        mol = gl.read_gaussian_input(
+            next(Path("separation").glob(f"SG=*/SEQ={seq}/charge=0/mult=1/gaussian_sp.com"))
+        )
+        assert mol.symbols == eqs[eq].select_atoms(labels).symbols
+    # 1 つの EQ のフラグメントで全原子を 1 回ずつ使う
+    for _, df_eq in df.group_by("EQ"):
+        labels = sorted(int(l) for s in df_eq["labels"] for l in s.split("_"))
+        assert labels == list(range(1, 54))
+
+
 def test_write_gaussian_sp_drops_chk(workflow):
     # template の link0 から %Chk だけを除く
     text = Path("template_sp.com").read_text()
