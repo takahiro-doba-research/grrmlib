@@ -205,6 +205,40 @@ keys = gl.connection_keys("seq", ["arene", "alkene"])                    # folde
 group_by = gl.connection_keys("seq", ["arene", "alkene"], with_angles=False)
 ```
 
+## Workflows
+
+`workflows` chains the pipelines into the steps used to compute energy descriptors from SC-AFIR results
+(separation → SP → selection → optimization → charges → substituents → ...). Each function corresponds to one script of a project;
+everything project-specific (paths, result file names, substituent names) is passed as arguments.
+The calculations themselves are not included: run them with any program and write each result next to its input as an xyz file
+whose title line is a JSON dict with `charge`, `mult`, `scfenergy` and `success` (and `optsteps` for optimizations).
+
+```python
+import grrmlib as gl
+
+keys = gl.SEPARATION_KEYS
+
+gl.make_separation_sp("EQ_list.log", "separation/sp", "separation/separation.csv", charges=[-1, 0, 1], mults=1)
+# ... compute separation/sp/SG=*/SEQ=*/charge=*/mult=*/init.xyz and write result.xyz next to each ...
+gl.select_sp("separation/sp", "result.xyz", "separation/sp.csv", "separation/sp_selected.csv",
+             key_names=keys, group_by=["SG", "charge", "mult"])
+gl.make_opt("separation/sp_selected.csv", "separation/sp", "separation/opt", key_names=keys)
+# ... optimize separation/opt/.../init.xyz and write result.xyz ...
+# Charges of the fragments of each group: total charge 0, lowest sum of energies
+gl.select_opt("separation/opt", "result.xyz", "separation/separation.csv", "separation/opt.csv", "separation/opt_selected.csv",
+              key_names=keys)
+
+# Substituents (templates raw/arene/0.com, ...) on the optimized structures; folder names give the substituent names
+subs = ["arene", "backbone"]
+gl.make_connection_sp("separation/sp_selected.csv", "separation/opt", "result.xyz", "note.com",
+                      [f"raw/{s}" for s in subs], "connection/sp")
+keys = gl.connection_key_names(subs)
+# ... SP, select_sp (group_by=gl.SEPARATION_KEYS + subs), make_opt and optimization as above ...
+gl.select_opt("connection/opt", "result.xyz", "separation/separation.csv", "connection/opt.csv", "connection/opt_selected.csv",
+              key_names=keys, substituents={"arene": [0], "backbone": [0, 1, 2]})
+gl.sum_energies("connection/opt_selected.csv", "energy_long.csv", "energy.csv", substituents=subs)
+```
+
 ## Citation
 
 If you use this code in academic work, please cite:

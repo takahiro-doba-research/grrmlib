@@ -50,12 +50,15 @@ from .operations import (
     product_charge_mult,
     read_connectivity,
     step_to_angles,
+    copy_notes,
     reset_connectable_notes,
     connect,
     connect_all_iter,
     connect_all,
+    expand_derivatives,
     separate_eqs,
     select_lowest,
+    select_charges,
 )
 from .pipelines import (
     SEPARATION_KEYS,
@@ -67,5 +70,14 @@ from .pipelines import (
     collect_gaussian_outputs,
     collect_grrm_min_outputs,
 )
+from .workflows import (
+    select_sp,
+    make_opt,
+    select_opt,
+    make_separation_sp,
+    connection_key_names,
+    make_connection_sp,
+    sum_energies,
+)
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"

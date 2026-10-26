@@ -1,6 +1,7 @@
 from typing import Iterator
 
 import numpy as np
+import polars as pl
 
 from .exceptions import FragmentNotFoundError, ManyFragmentsFoundError
 from ..core import Molecule, Molecules, GroupedMolecules, overlay, rotate
@@ -58,6 +59,17 @@ def step_to_angles(mol):
                 mols[angle] = mol_copy
     
     return mols
+
+
+def copy_notes(mol: Molecule, core: Molecule) -> Molecule:
+    """
+    core の notes を、同じ labels の原子に写した mol を返す（mol は core の一部の原子を持つ分子。
+    例：EQ を分離した分子に、EQ と同じ並びの note.com の notes を付ける）。
+    """
+    label_to_note = dict(zip(core.labels, core.notes))
+    mol_new = mol.copy()
+    mol_new.notes = [label_to_note[label] for label in mol.labels]
+    return mol_new
 
 
 def reset_connectable_notes(mol, offset=0):
@@ -181,6 +193,26 @@ def connect_all(
         tuple(int(n) if n is not None else n for n in names): mol
         for names, mol in connect_all_iter(seqs, subs_list)
     })
+
+
+def expand_derivatives(
+    df: pl.DataFrame,
+    substituents: dict[str, list[int]]
+) -> pl.DataFrame:
+    """
+    置換基の列（substituents の名前）が null の行を、その置換基の全ての番号に展開する。
+    分子に含まれない置換基は、その分子のエネルギーに関係しないので、どの誘導体にも同じ行を使う。
+
+    - 誘導体の番号は列 "<名前>_derivative" に入れる（null でない行はその番号のまま）
+    - substituents は {名前: 番号のリスト}（例：{"backbone": [0, 1, 2], "pyridone": [0, 1]}）
+    """
+    for name, numbers in substituents.items():
+        df = (
+            df
+            .join(pl.DataFrame({f"{name}_derivative": numbers}), how="cross")
+            .filter(pl.col(name).is_null() | (pl.col(name) == pl.col(f"{name}_derivative")))
+        )
+    return df
 
 
 def build_connection_folder(folder, names):

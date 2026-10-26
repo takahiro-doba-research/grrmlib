@@ -1,4 +1,5 @@
 import numpy as np
+import polars as pl
 import pytest
 
 import grrmlib as gl
@@ -74,3 +75,19 @@ def test_connect_all(core, sub):
     mols = gl.connect_all(gl.Molecules({0: core}), [subs])
     # key は (seq, 置換基, 角度)。角度は int
     assert list(mols) == [(0, 0, 0), (0, 0, 120), (0, 0, 240)]
+
+
+def test_copy_notes(core):
+    # 一部の原子だけを持つ分子に、labels で notes を写す
+    mol = gl.copy_notes(core.select_atoms([1, 5]), core)
+    assert mol.notes == [[0, 5, 2], [1, 1, 2]]
+
+
+def test_expand_derivatives():
+    # pyridone を含まない行は、全ての pyridone の番号に展開する
+    df = pl.DataFrame({"SG": [0, 0, 1], "backbone": [0, 1, None], "pyridone": [None, None, 3]})
+    df = gl.expand_derivatives(df, {"backbone": [0, 1], "pyridone": [2, 3]})
+
+    assert df.sort("SG", "backbone_derivative", "pyridone_derivative").select(
+        "SG", "backbone_derivative", "pyridone_derivative"
+    ).rows() == [(0, 0, 2), (0, 0, 3), (0, 1, 2), (0, 1, 3), (1, 0, 3), (1, 1, 3)]
