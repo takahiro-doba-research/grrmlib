@@ -40,9 +40,6 @@ from .io import (
     read_connectables,
     write_connectable,
     write_connectables,
-    read_ase_result,
-    read_ase_results,
-    write_ase_result,
     to_dataframe,
 )
 from .operations import (
@@ -69,7 +66,6 @@ from .pipelines import (
     gaussian_sp_to_grrm_min,
     collect_gaussian_outputs,
     collect_grrm_min_outputs,
-    run_ase,
 )
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"

@@ -5,8 +5,3 @@ services:
     working_dir: /work
     volumes:
       - .:/work
-      # UMA のモデルを毎回ダウンロードしないように Hugging Face のキャッシュを残す
-      - hf-cache:/root/.cache/huggingface
-
-volumes:
-  hf-cache:

@@ -33,9 +33,4 @@ from .connectable import (
     write_connectable,
     write_connectables,
 )
-from .ase_result import (
-    read_ase_result,
-    read_ase_results,
-    write_ase_result,
-)
 from .dataframe import to_dataframe

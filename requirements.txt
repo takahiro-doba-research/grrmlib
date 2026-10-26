@@ -1,16 +1,9 @@
-# GPU がないので torch は CPU 版を使う
---extra-index-url https://download.pytorch.org/whl/cpu
-
-# numpy と torch は fairchem-core の制約（numpy<2.5, torch~=2.13.0）に合わせる
 numpy==2.4.6
 scipy==1.18.1
 networkx==3.7
 polars==2.0.0
 periodictable==2.1.0
 cclib==1.8.1
-ase==3.29.0
-torch==2.13.0
-fairchem-core==2.23.0
 
 # テスト
 pytest==9.1.1

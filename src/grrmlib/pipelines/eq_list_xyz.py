@@ -26,7 +26,7 @@ def eq_list_to_xyzs(
 
     - xyz は folder/SG=*/SEQ=*/charge=*/mult=*/basename に書く。
       タイトル行には charge, mult, labels を JSON で書く（write_xyz の record=True）
-    - 計算の入力は xyz から別に作る（Gaussian なら xyzs_to_gaussian_inputs、ASE なら run_ase に直接渡す）
+    - 計算の入力は xyz から別に作る（Gaussian なら xyzs_to_gaussian_inputs）
     - G, EQ, SEQ, SG の対応表を path_table に CSV で書き、返す
     """
     eqs = read_eq_list(path_eq_list)

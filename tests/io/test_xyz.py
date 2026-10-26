@@ -50,10 +50,12 @@ def test_write_and_read_xyz_record(tmp_path, water):
     }
 
 
-def test_read_xyz_ase_result(tmp_path, water):
-    # run_ase の結果ファイルも xyz として読める
-    water.scfenergy = -1.0
-    gl.write_ase_result(water, tmp_path / "sp.xyz")
+def test_read_xyz_json_extra(tmp_path, water):
+    # タイトル行の JSON に scfenergy などがあれば、それも属性として読む
+    gl.write_xyz(water, tmp_path / "sp.xyz", record=True)
+    lines = (tmp_path / "sp.xyz").read_text().splitlines()
+    lines[1] = json.dumps({**json.loads(lines[1]), "scfenergy": -1.0})
+    (tmp_path / "sp.xyz").write_text("\n".join(lines) + "\n")
     mol = gl.read_xyz(tmp_path / "sp.xyz")
 
     assert mol.scfenergy == -1.0
