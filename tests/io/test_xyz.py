@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 
 import grrmlib as gl
@@ -31,3 +33,28 @@ def test_write_and_read_xyzs(tmp_path, water):
     assert (tmp_path / "3/4/mol.xyz").exists()
     assert (tmp_path / "5/mol.xyz").exists()
     assert set(gl.read_xyzs(tmp_path, "mol.xyz")) == {(3, 4), 5}
+
+
+def test_write_and_read_xyz_record(tmp_path, water):
+    # record=True ではタイトル行に charge, mult, labels を JSON で書く
+    water.labels = water.labels + 10
+    water.charge, water.mult = 1, 2
+    gl.write_xyz(water, tmp_path / "a.xyz", record=True)
+    mol = gl.read_xyz(tmp_path / "a.xyz")
+
+    assert (mol.charge, mol.mult) == (1, 2)
+    assert list(mol.labels) == [11, 12, 13]
+    assert np.allclose(mol.atomcoords, water.atomcoords)
+    assert json.loads((tmp_path / "a.xyz").read_text().splitlines()[1]) == {
+        "charge": 1, "mult": 2, "labels": [11, 12, 13],
+    }
+
+
+def test_read_xyz_ase_result(tmp_path, water):
+    # run_ase の結果ファイルも xyz として読める
+    water.scfenergy = -1.0
+    gl.write_ase_result(water, tmp_path / "sp.xyz")
+    mol = gl.read_xyz(tmp_path / "sp.xyz")
+
+    assert mol.scfenergy == -1.0
+    assert (mol.charge, mol.mult) == (0, 1)

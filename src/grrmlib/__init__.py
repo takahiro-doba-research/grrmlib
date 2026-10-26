@@ -40,6 +40,9 @@ from .io import (
     read_connectables,
     write_connectable,
     write_connectables,
+    read_ase_result,
+    read_ase_results,
+    write_ase_result,
     to_dataframe,
 )
 from .operations import (
@@ -53,15 +56,20 @@ from .operations import (
     reset_connectable_notes,
     connect,
     connect_all_iter,
+    connect_all,
+    separate_eqs,
+    select_lowest,
 )
-from .jobs import GaussianJob
-from .schedulers import (
-    PythonScheduler,
-    KyotoUnivSlurmScheduler,
-)
-from .workflows import (
-    SeparationWorkflow,
-    ConnectionWorkflow,
+from .pipelines import (
+    SEPARATION_KEYS,
+    eq_list_to_xyzs,
+    xyzs_to_gaussian_inputs,
+    connection_keys,
+    connectables_to_gaussian_sp,
+    gaussian_sp_to_grrm_min,
+    collect_gaussian_outputs,
+    collect_grrm_min_outputs,
+    run_ase,
 )
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"

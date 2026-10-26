@@ -64,9 +64,11 @@ def reset_connectable_notes(mol, offset=0):
     mol_new = mol.copy()
     mol_new.labels = np.arange(offset + 1, len(mol.labels) + offset + 1)
     mapping = dict(zip(mol.labels, mol_new.labels))
+    # 参照する原子が除かれた notes は使えないので、fragment だけにする
     mol_new.notes = [
         [n[0], mapping[n[1]], mapping[n[2]], *n[3:]]
-        if len(n) >= 3 else n
+        if len(n) >= 3 and n[1] in mapping and n[2] in mapping
+        else n[:1]
         for n in mol.notes
     ]
     return mol_new
@@ -90,23 +92,23 @@ def connect(mol0, mol1):
             f"fragment {fragment1} is not connectable to mol0"
         )
     
-    indices0 = mol0.labels_to_indices(connectivity0[fragment1]["labels_ref"])
-    indices1 = mol1.labels_to_indices(connectivity1[fragment0]["labels_ref"])
-    
-    atomcoords1 = overlay(
-        mol0.atomcoords,
-        mol1.atomcoords,
-        *[indices0[i] for i in [1, 0, 2]],
-        *indices1
+    labels_ref0 = connectivity0[fragment1]["labels_ref"]
+    labels_ref1 = connectivity1[fragment0]["labels_ref"]
+
+    # mol0 で残す原子に mol1 で除く原子を重ね、mol1 で残す原子を mol0 で除く原子の方向に置く
+    mol1 = mol1.copy()
+    mol1.atomcoords = overlay(
+        mol0,
+        mol1,
+        *[labels_ref0[i] for i in [1, 0, 2]],
+        *labels_ref1
     )
-    atomcoords1 = rotate(
-        atomcoords1,
-        *indices1[:2],
+    mol1.atomcoords = rotate(
+        mol1,
+        *labels_ref1[:2],
         connectivity1[fragment0]["angle"],
         degrees=True
     )
-    mol1 = mol1.copy()
-    mol1.atomcoords = atomcoords1
     
     mol0 = mol0.remove_atoms(connectivity0[fragment1]["labels"])
     mol1 = mol1.remove_atoms(connectivity1[fragment0]["labels"])
@@ -164,6 +166,21 @@ def connect_all_iter(
             seq,
             subs_list
         )
+
+
+def connect_all(
+    seqs: Molecules,
+    subs_list: list[Molecules]
+) -> Molecules:
+    """
+    connect_all_iter の結果を Molecules にする。
+    key は (seq, 置換基 1, 角度 1, 置換基 2, 角度 2, ...)。角度は int にし、
+    つながらなかった置換基は (None, None)。
+    """
+    return Molecules({
+        tuple(int(n) if n is not None else n for n in names): mol
+        for names, mol in connect_all_iter(seqs, subs_list)
+    })
 
 
 def build_connection_folder(folder, names):

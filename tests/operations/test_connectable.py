@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 import grrmlib as gl
@@ -39,24 +40,37 @@ def test_reset_connectable_notes(core):
     assert mol.notes[3] == [1, 11, 12]
 
 
-@pytest.mark.xfail(
-    reason="connect が古い形 (座標の配列と添字) で overlay / rotate を呼んでいる",
-    raises=AttributeError,
-    strict=True,
-)
+def test_reset_connectable_notes_removed_ref(core):
+    # 参照する原子 (H5) を除くと、その notes は fragment だけになる
+    mol = gl.reset_connectable_notes(core.remove_atoms([5]))
+    assert mol.notes[0] == [0]
+
+
 def test_connect(core, sub):
-    # TODO: 直したら、つないだ構造（原子数や結合距離）も確かめる。
-    #       そのためには tests/data/connectable の notes の意味を実データに合わせる必要がある
     mol = gl.connect(core, gl.step_to_angles(sub)[0.0])
-    assert isinstance(mol, gl.Molecule)
+
+    # core の H5 を sub の H5 に置き換えるので、原子数と元素は変わらない
+    assert mol.symbols == ["C", "H", "H", "H", "H"]
+    assert list(mol.labels) == [1, 2, 3, 4, 5]
+    # 新しい H は core の C1–H5 の方向に、sub の C1–H5 の距離で置かれる
+    np.testing.assert_allclose(mol.atomcoords, core.atomcoords, atol=1e-8)
 
 
-@pytest.mark.xfail(
-    reason="connect が古い形 (座標の配列と添字) で overlay / rotate を呼んでいる",
-    raises=AttributeError,
-    strict=True,
-)
+def test_connect_angle(core, sub):
+    # 結合軸のまわりに回しても、軸の上の原子は動かない
+    mol = gl.connect(core, gl.step_to_angles(sub)[120.0])
+    np.testing.assert_allclose(mol.atomcoords, core.atomcoords, atol=1e-8)
+
+
 def test_connect_all_iter(core, sub):
-    subs = gl.step_to_angles(sub)
+    subs = gl.Molecules({0: sub}).expand(gl.step_to_angles).flatten()
     out = list(gl.connect_all_iter(gl.Molecules({0: core}), [subs]))
-    assert len(out) > 0
+    assert [names for names, _ in out] == [(0, 0, 0.0), (0, 0, 120.0), (0, 0, 240.0)]
+
+
+def test_connect_all(core, sub):
+    # 置換基の key は (置換基, 角度)
+    subs = gl.Molecules({0: sub}).expand(gl.step_to_angles).flatten()
+    mols = gl.connect_all(gl.Molecules({0: core}), [subs])
+    # key は (seq, 置換基, 角度)。角度は int
+    assert list(mols) == [(0, 0, 0), (0, 0, 120), (0, 0, 240)]

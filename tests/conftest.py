@@ -60,3 +60,18 @@ def eqs(data: Path) -> gl.Molecules:
 def pts(data: Path) -> gl.Molecules:
     # 同じ計算の PT_list の先頭 3 件。CONNECTION は 8 - 109, 49 - ??, 30 - 110
     return gl.read_pt_list(data / "grrm/td_c1_193_SCAFIR6_PT_list.log")
+
+
+@pytest.fixture
+def folder_keys() -> Callable[[Path, str], list[tuple[int, ...]]]:
+    """
+    folder の下の basename のフォルダ名からキーを読む。
+    folder/SG=0/SEQ=0/charge=0/mult=1/xxx.com -> (0, 0, 0, 1)
+    """
+    def get(folder: Path, basename: str) -> list[tuple[int, ...]]:
+        return sorted(
+            tuple(int(part.split("=")[1]) for part in p.parent.relative_to(folder).parts)
+            for p in folder.rglob(basename)
+        )
+
+    return get
